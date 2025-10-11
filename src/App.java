@@ -17,15 +17,15 @@ public class App {
     //populated board for testing
     static String[][] board = 
     {
-        {null, null,"●", "●", "○", null, null, "○", null},
-        {null, "●", null, "●", "○", "●", "○", "●", "○"},
-        {null, "●", null, "●", "○", "●", null, "○", null},
-        {"●", "●","●", "○", "○", "●", null, null, null},
-        {"●", "○","○", "○", "●", "●", "●", null, null},
-        {"○", "○","○", "●", "●", "○", "●", "●", "●"},
-        {"○", null, null, "○", "○", "○", "○", "○", "●"},
-        {"○", null,"○", "○", null, "○", "○", null, "○"},
-        {null, "○", null, null, null, null, null, null, null},
+        {null, null,"-●", "-●", "-○", null, null, "-○", null},
+        {null, "-●", null, "-●", "-○", "-●", "-○", "-●", "-○"},
+        {null, "-●", null, "-●", "-○", "-●", null, "-○", null},
+        {"-●", "-●","-●", "-○", "-○", "-●", null, null, null},
+        {"-●", "-○","-○", "-○", "-●", "-●", "-●", null, null},
+        {"-○", "-○","-○", "-●", "-●", "-○", "-●", "-●", "-●"},
+        {"-○", null, null, "-○", "-○", "-○", "-○", "-○", "-●"},
+        {"-○", null,"-○", "-○", null, "-○", "-○", null, "-○"},
+        {null, "-○", null, null, null, null, null, null, null},
 
     };
 
