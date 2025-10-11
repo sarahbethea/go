@@ -1,12 +1,12 @@
 import java.util.Scanner;
+import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class App {
-    public static final class Position {
-        public final int row, col;
-        public Position(int row, int col) { this.row = row; this.col = col; }
-    }
+    // records are value based classes. 
+    public record Position(int row, int col) {}
 
     static String[][] goBoard = new String[9][9];
 
@@ -30,7 +30,7 @@ public class App {
     };
 
     private static boolean inBounds(int r, int c) {
-        return r >= 0 && r < board.length && c >= 0 && c < board.length;
+        return r >= 0 && r < board.length && c >= 0 && c < board[0].length;
     }
 
     private static String colorAt(Position pos) {
@@ -71,11 +71,11 @@ public class App {
         }
 
         // initialize empty set of positions for has been checked
-        List<Position> visited = new ArrayList<Position>();
+        Set<Position> visited = new HashSet<Position>();
         return hasLiberty(start, colorAt(start), visited);
     }
 
-    static boolean hasLiberty(Position piece, String color, List<Position> visited) {
+    static boolean hasLiberty(Position piece, String color, Set<Position> visited) {
         System.out.println("hasLiberty called");
         if (visited.contains(piece)) {
             System.out.println("base case hit");
