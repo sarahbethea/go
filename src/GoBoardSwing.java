@@ -32,9 +32,33 @@ public class GoBoardSwing extends JFrame {
         infoPanel.setBackground(new Color(240, 240, 240)); // Match window background
         currentPlayerLabel = new JLabel("Current Player: White (○)");
         statusLabel = new JLabel("Click a position to place a stone");
+        
+        // Create player chooser buttons
+        JButton whiteButton = new JButton("White (○)");
+        JButton blackButton = new JButton("Black (●)");
+        whiteButton.setBackground(Color.WHITE);
+        whiteButton.setForeground(Color.BLACK);
+        blackButton.setBackground(Color.BLACK);
+        blackButton.setForeground(Color.WHITE);
+        
+        // Add action listeners for player chooser
+        whiteButton.addActionListener(e -> {
+            player1Turn = true;
+            updatePlayerDisplay();
+        });
+        
+        blackButton.addActionListener(e -> {
+            player1Turn = false;
+            updatePlayerDisplay();
+        });
+        
         infoPanel.add(currentPlayerLabel);
         infoPanel.add(new JLabel(" | "));
         infoPanel.add(statusLabel);
+        infoPanel.add(new JLabel(" | "));
+        infoPanel.add(new JLabel("Force Player: "));
+        infoPanel.add(whiteButton);
+        infoPanel.add(blackButton);
         
         // Create the board
         boardPanel = createBoard();
@@ -214,6 +238,14 @@ public class GoBoardSwing extends JFrame {
                 gameLogic = new App();
                 boardPanel.repaint();
                 System.out.println("Board reset to initial state.");
+            } else if (command.equals("setWhite") || command.equals("white")) {
+                player1Turn = true;
+                updatePlayerDisplay();
+                System.out.println("Player set to White (○)");
+            } else if (command.equals("setBlack") || command.equals("black")) {
+                player1Turn = false;
+                updatePlayerDisplay();
+                System.out.println("Player set to Black (●)");
             } else {
                 System.out.println("Unknown command: " + command);
                 System.out.println("Type 'help' for available commands.");
@@ -229,6 +261,8 @@ public class GoBoardSwing extends JFrame {
         System.out.println("methods                 - List all testable game methods");
         System.out.println("clear                   - Clear the console");
         System.out.println("reset                   - Reset board to initial state");
+        System.out.println("setWhite / white        - Set player to White (○)");
+        System.out.println("setBlack / black        - Set player to Black (●)");
         System.out.println("\nGame Method Commands:");
         System.out.println("  isAlive(row, col)              - Test if stone is alive");
         System.out.println("  placePiece(row, col, isWhite)  - Place a stone");
@@ -244,12 +278,12 @@ public class GoBoardSwing extends JFrame {
         System.out.println("\n=== All Testable Game Methods ===");
         System.out.println();
         
-        System.out.println("🎮 BOARD STATE METHODS:");
+        System.out.println(" BOARD STATE METHODS:");
         System.out.println("  printBoard()                   - Display current board state");
         System.out.println("  reset                          - Reset board to initial state");
         System.out.println();
         
-        System.out.println("🪨 STONE PLACEMENT:");
+        System.out.println(" STONE PLACEMENT:");
         System.out.println("  placePiece(row, col, isWhite)  - Place stone at position");
         System.out.println("    Parameters:");
         System.out.println("      row (0-8)     - Row coordinate");
@@ -258,7 +292,7 @@ public class GoBoardSwing extends JFrame {
         System.out.println("    Example: placePiece(4, 4, true)");
         System.out.println();
         
-        System.out.println("🔍 GAME LOGIC METHODS:");
+        System.out.println(" GAME LOGIC METHODS:");
         System.out.println("  isAlive(row, col)              - Check if stone has liberties");
         System.out.println("    Parameters:");
         System.out.println("      row (0-8)     - Row coordinate");
@@ -267,13 +301,21 @@ public class GoBoardSwing extends JFrame {
         System.out.println("    Example: isAlive(4, 2)");
         System.out.println();
         
-        System.out.println("📋 UTILITY COMMANDS:");
+        System.out.println(" UTILITY COMMANDS:");
         System.out.println("  help                            - Show command help");
         System.out.println("  methods                         - Show this method list");
         System.out.println("  clear                           - Clear console output");
+        System.out.println("  reset                           - Reset board to initial state");
         System.out.println();
         
-        System.out.println("💡 TIPS:");
+        System.out.println(" PLAYER CONTROLS:");
+        System.out.println("  setWhite / white                - Set current player to White (○)");
+        System.out.println("  setBlack / black                - Set current player to Black (●)");
+        System.out.println("    Note: Use these to place multiple stones of same color");
+        System.out.println("    Example: setWhite then placePiece(4, 4, true)");
+        System.out.println();
+        
+        System.out.println(" TIPS:");
         System.out.println("  - All coordinates are 0-based (0-8)");
         System.out.println("  - true/false for boolean parameters");
         System.out.println("  - Commands are case-sensitive");
@@ -397,13 +439,16 @@ public class GoBoardSwing extends JFrame {
         // Refresh the board display
         boardPanel.repaint();
         
-        // Switch turns
-        player1Turn = !player1Turn;
-        currentPlayerLabel.setText("Current Player: " + (player1Turn ? "White (○)" : "Black (●)"));
-        statusLabel.setText("Move placed successfully!");
+        // Update status (don't auto-switch turns for testing)
+        statusLabel.setText("Stone placed! Click player buttons to change color.");
         
         // Check for captures (you can expand this later)
         checkForCaptures(row, col);
+    }
+    
+    private void updatePlayerDisplay() {
+        currentPlayerLabel.setText("Current Player: " + (player1Turn ? "White (○)" : "Black (●)"));
+        statusLabel.setText("Player set to " + (player1Turn ? "White" : "Black") + ". Click board to place stones.");
     }
     
     
