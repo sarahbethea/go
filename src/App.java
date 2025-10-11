@@ -28,6 +28,11 @@ public class App {
         {null, "○", null, null, null, null, null, null, null},
 
     };
+    
+    // Method to access the board from GUI
+    public String[][] getBoard() {
+        return board;
+    }
 
     private static boolean inBounds(int r, int c) {
         return r >= 0 && r < board.length && c >= 0 && c < board[0].length;
