@@ -39,6 +39,7 @@ public class App {
     }
 
     private static String colorAt(Position pos) {
+        System.out.println();
         System.out.println("colorAt called");
         System.out.println();
         return board[pos.row][pos.col];
@@ -60,7 +61,7 @@ public class App {
 
         System.out.println("neighbors list:");
         for (Position n : neighbors) {
-            System.out.print(n.row + ", " + n.col);
+            System.out.println(n.row + ", " + n.col);
             System.out.println();
         }
 
@@ -68,7 +69,7 @@ public class App {
     }
 
     static boolean isAlive(Position start) {
-        System.out.println("isAlive called");
+        System.out.println("isAlive called on position: " + start.row + ", " + start.col);
         // if space is empty, throw return false
         if (colorAt(start) == null) {
             System.out.println("returning false");
