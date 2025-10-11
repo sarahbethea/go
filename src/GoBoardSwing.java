@@ -395,6 +395,22 @@ public class GoBoardSwing extends JFrame {
                 g2d.drawLine(x, actualMarginY, x, actualMarginY + (BOARD_SIZE - 1) * actualCellSize);
             }
             
+            // Draw row and column indexes
+            g2d.setColor(new Color(50, 50, 50)); // Dark gray for indexes
+            g2d.setFont(new Font("Arial", Font.BOLD, 12));
+            
+            // Draw row indexes (left side) - moved farther away
+            for (int row = 0; row < BOARD_SIZE; row++) {
+                int y = actualMarginY + row * actualCellSize + 5; // Slight offset to center
+                g2d.drawString(String.valueOf(row), actualMarginX - 40, y); // Moved farther left
+            }
+            
+            // Draw column indexes (top) - moved farther away
+            for (int col = 0; col < BOARD_SIZE; col++) {
+                int x = actualMarginX + col * actualCellSize - 5; // Slight offset to center
+                g2d.drawString(String.valueOf(col), x, actualMarginY - 25); // Moved farther up
+            }
+            
             // Draw stones on intersections
             for (int row = 0; row < BOARD_SIZE; row++) {
                 for (int col = 0; col < BOARD_SIZE; col++) {

@@ -62,7 +62,6 @@ public class App {
         System.out.println("neighbors list:");
         for (Position n : neighbors) {
             System.out.println(n.row + ", " + n.col);
-            System.out.println();
         }
 
         return neighbors;     
