@@ -67,14 +67,9 @@ public class App {
         return neighbors;     
     }
 
-    // overloaded isAlive to accept color as argument
+    // overloaded isAlive to accept color as argument to check unoccupied space
     static boolean isAlive(Position start, String color) {
         System.out.println("isAlive called on position: " + start.row + ", " + start.col + ", for color " + color);
-        // // if space is empty, throw return false
-        // if (colorAt(start) == null) {
-        //     System.out.println("returning false");
-        //     return false;
-        // }
 
         // initialize empty set of positions for has been checked
         Set<Position> visited = new HashSet<Position>();
