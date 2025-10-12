@@ -142,6 +142,19 @@ public class App {
         }
     }
 
+    static void searchAndCapture(Position start) {
+        // get neighbors of start piece
+        List<Position> neighbors = getNeighbors(start);
+        for (Position neighbor: neighbors) {
+            Set<Position> group = new HashSet<>();
+            if (!colorAt(neighbor).equals(colorAt(start))) {
+                if (!hasLiberty(neighbor, colorAt(neighbor), group)) {
+                    removeGroup(group);
+                }
+            }
+        }
+    }
+
 
     static void printBoard(String[][] board) {
         // print board coordinates for any size board
