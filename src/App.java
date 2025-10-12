@@ -132,6 +132,16 @@ public class App {
         return groupHasLiberty;
     }
 
+    static void removePiece(Position piece) {
+        board[piece.row][piece.col] = null;
+    }
+
+    static void removeGroup(Set<Position> group) {
+        for (Position member: group) {
+            removePiece(member);
+        }
+    }
+
 
     static void printBoard(String[][] board) {
         // print board coordinates for any size board
@@ -170,12 +180,13 @@ public class App {
         printBoard(board);
 
         // ---- TEST ----
-        Position pos = new Position(3, 1);
+        Position pos = new Position(2, 7);
         Set<Position> groupMembers = new HashSet<>();
         // System.out.println("pos.row: " + pos.row);
         // System.out.println(isAlive(pos, color));
         // --------------
-        String color = "●";
+        // "○" "●"
+        String color = "○";
         hasLiberty(pos, color, groupMembers);
 
         System.out.println("group members:");
