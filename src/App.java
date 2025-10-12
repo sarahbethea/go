@@ -148,9 +148,9 @@ public class App {
 
     static void placePiece(int x, int y, Boolean player1) {
         if (player1 == true) {
-            board[x][y] = "○";
-        } else {
             board[x][y] = "●";
+        } else {
+            board[x][y] = "○";
         }
     }
 
@@ -167,7 +167,7 @@ public class App {
         // --------------
 
         while (true) {
-            String color = player1 ? "○" : "●"; 
+            String color = player1 ? "●" : "○"; 
 
             Scanner scn = new Scanner(System.in);
             int x, y;
@@ -179,7 +179,6 @@ public class App {
 
             Position selectedPostion = new Position(x, y);
 
-            System.out.println("ISALIVEEEEE");
             System.out.println(isAlive(selectedPostion, color));
 
             if (board[x][y] != null) {
