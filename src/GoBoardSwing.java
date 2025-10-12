@@ -4,6 +4,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 public class GoBoardSwing extends JFrame {
     private static final int BOARD_SIZE = 9;
@@ -16,6 +22,16 @@ public class GoBoardSwing extends JFrame {
     
     // Reference to the game logic from App.java
     private App gameLogic;
+    
+    // DFS Animation fields
+    private Set<App.Position> dfsVisited = new HashSet<>();
+    private Set<App.Position> dfsLiberties = new HashSet<>();
+    private App.Position currentDFS = null;
+    private Timer dfsTimer;
+    private boolean dfsAnimating = false;
+    private List<App.Position> dfsSteps = new ArrayList<>();
+    private Map<App.Position, Integer> stepNumbers = new HashMap<>();
+    private int currentStep = 0;
     
     public GoBoardSwing() {
         // Initialize game logic
@@ -269,6 +285,20 @@ public class GoBoardSwing extends JFrame {
                 player1Turn = false;
                 updatePlayerDisplay();
                 System.out.println("Player set to Black (●)");
+            } else if (command.startsWith("animateDFS(") && command.endsWith(")")) {
+                // Parse: animateDFS(row, col)
+                String params = command.substring(11, command.length() - 1);
+                String[] parts = params.split(",");
+                if (parts.length == 2) {
+                    int row = Integer.parseInt(parts[0].trim());
+                    int col = Integer.parseInt(parts[1].trim());
+                    animateDFS(row, col);
+                } else {
+                    System.out.println("Error: animateDFS requires 2 parameters (row, col)");
+                }
+            } else if (command.equals("clearDFS")) {
+                clearDFSAnimation();
+                System.out.println("DFS animation cleared.");
             } else {
                 System.out.println("Unknown command: " + command);
                 System.out.println("Type 'help' for available commands.");
@@ -286,6 +316,8 @@ public class GoBoardSwing extends JFrame {
         System.out.println("reset                   - Reset board to initial state");
         System.out.println("setWhite / white        - Set player to White (○)");
         System.out.println("setBlack / black        - Set player to Black (●)");
+        System.out.println("animateDFS(row, col)    - Animate DFS traversal (highlights persist)");
+        System.out.println("clearDFS                - Manually clear DFS highlights");
         System.out.println("\nGame Method Commands:");
         System.out.println("  isAlive(row, col)              - Test if existing stone is alive");
         System.out.println("  isAlive(row, col, color)       - Test if placing stone would be alive");
@@ -473,6 +505,55 @@ public class GoBoardSwing extends JFrame {
                     }
                 }
             }
+            
+            // Draw DFS animation highlights AFTER stones
+            if (dfsAnimating || !dfsVisited.isEmpty()) {
+                // Draw visited positions with step numbers
+                for (App.Position pos : dfsVisited) {
+                    int x = actualMarginX + pos.col() * actualCellSize;
+                    int y = actualMarginY + pos.row() * actualCellSize;
+                    
+                    // Draw yellow highlight
+                    g2d.setColor(new Color(255, 255, 0, 120)); // Semi-transparent yellow
+                    int visitedSize = Math.max(32, actualCellSize * 6 / 10);
+                    g2d.fillOval(x - visitedSize/2, y - visitedSize/2, visitedSize, visitedSize);
+                    
+                    // Draw step number
+                    if (stepNumbers.containsKey(pos)) {
+                        g2d.setColor(Color.BLACK);
+                        g2d.setFont(new Font("Arial", Font.BOLD, 12));
+                        String stepNum = String.valueOf(stepNumbers.get(pos));
+                        FontMetrics fm = g2d.getFontMetrics();
+                        int textX = x - fm.stringWidth(stepNum) / 2;
+                        int textY = y + fm.getAscent() / 2 - 2;
+                        g2d.drawString(stepNum, textX, textY);
+                    }
+                }
+                
+                // Draw current DFS position
+                if (currentDFS != null) {
+                    int x = actualMarginX + currentDFS.col() * actualCellSize;
+                    int y = actualMarginY + currentDFS.row() * actualCellSize;
+                    g2d.setColor(new Color(255, 0, 0, 150)); // Semi-transparent red
+                    g2d.setStroke(new BasicStroke(4));
+                    int highlightSize = Math.max(35, actualCellSize * 7 / 10);
+                    g2d.drawOval(x - highlightSize/2, y - highlightSize/2, highlightSize, highlightSize);
+                    
+                    // Draw "DFS" text
+                    g2d.setColor(Color.RED);
+                    g2d.setFont(new Font("Arial", Font.BOLD, 10));
+                    g2d.drawString("DFS", x - 8, y + 3);
+                }
+                
+                // Draw liberties
+                for (App.Position pos : dfsLiberties) {
+                    int x = actualMarginX + pos.col() * actualCellSize;
+                    int y = actualMarginY + pos.row() * actualCellSize;
+                    g2d.setColor(new Color(0, 255, 0, 150)); // Semi-transparent green
+                    int libertySize = Math.max(20, actualCellSize * 4 / 10);
+                    g2d.fillOval(x - libertySize/2, y - libertySize/2, libertySize, libertySize);
+                }
+            }
         }
     }
     
@@ -531,6 +612,107 @@ public class GoBoardSwing extends JFrame {
         // This is where you can integrate your capture logic later
         // For now, just a placeholder
         statusLabel.setText("Move placed! (Capture detection coming soon)");
+    }
+    
+    // Animated DFS visualization method
+    private void animateDFS(int row, int col) {
+        System.out.println("Starting DFS animation for position (" + row + ", " + col + ")");
+        
+        // Clear previous animation
+        clearDFSAnimation();
+        
+        // Reset animation state
+        dfsVisited.clear();
+        dfsLiberties.clear();
+        dfsSteps.clear();
+        currentStep = 0;
+        dfsAnimating = true;
+        
+        // Perform DFS and record all steps
+        App.Position startPos = new App.Position(row, col);
+        performDFSWithSteps(startPos, gameLogic.getBoard()[row][col]);
+        
+        System.out.println("DFS traversal recorded " + dfsSteps.size() + " steps");
+        
+        // Start the animation timer
+        dfsTimer = new Timer(1000, e -> {
+            if (currentStep < dfsSteps.size()) {
+                currentDFS = dfsSteps.get(currentStep);
+                // Add current position to visited set for highlighting
+                dfsVisited.add(currentDFS);
+                // Record step number
+                stepNumbers.put(currentDFS, currentStep + 1);
+                System.out.println("DFS Step " + (currentStep + 1) + ": Exploring position (" + 
+                    currentDFS.row() + ", " + currentDFS.col() + ")");
+                boardPanel.repaint();
+                currentStep++;
+            } else {
+                // Animation complete - keep highlights visible
+                dfsAnimating = false;
+                currentDFS = null;
+                System.out.println("DFS Animation complete!");
+                System.out.println("Visited positions: " + dfsVisited.size());
+                System.out.println("Liberties found: " + dfsLiberties.size());
+                System.out.println("Type 'clearDFS' when you want to remove the highlights.");
+                boardPanel.repaint();
+                dfsTimer.stop();
+            }
+        });
+        
+        dfsTimer.start();
+    }
+    
+    // DFS method that records steps for animation
+    private void performDFSWithSteps(App.Position pos, String color) {
+        if (dfsSteps.contains(pos)) {
+            return; // Already in steps list
+        }
+        
+        // Record this step (but don't add to visited yet - that happens during animation)
+        dfsSteps.add(pos);
+        
+        // Check neighbors
+        List<App.Position> neighbors = getNeighbors(pos);
+        for (App.Position neighbor : neighbors) {
+            String neighborColor = gameLogic.getBoard()[neighbor.row()][neighbor.col()];
+            
+            if (neighborColor == null) {
+                // Found a liberty
+                dfsLiberties.add(neighbor);
+            } else if (neighborColor.equals(color)) {
+                // Continue DFS on connected stone
+                performDFSWithSteps(neighbor, color);
+            }
+        }
+    }
+    
+    // Helper method to get neighbors (same as in App.java)
+    private List<App.Position> getNeighbors(App.Position pos) {
+        List<App.Position> neighbors = new ArrayList<>();
+        int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}}; // up, down, left, right
+        
+        for (int[] dir : directions) {
+            int newRow = pos.row() + dir[0];
+            int newCol = pos.col() + dir[1];
+            if (newRow >= 0 && newRow < 9 && newCol >= 0 && newCol < 9) {
+                neighbors.add(new App.Position(newRow, newCol));
+            }
+        }
+        return neighbors;
+    }
+    
+    private void clearDFSAnimation() {
+        if (dfsTimer != null) {
+            dfsTimer.stop();
+        }
+        dfsVisited.clear();
+        dfsLiberties.clear();
+        currentDFS = null;
+        dfsAnimating = false;
+        dfsSteps.clear();
+        stepNumbers.clear();
+        currentStep = 0;
+        boardPanel.repaint();
     }
     
     public static void main(String[] args) {
