@@ -11,6 +11,7 @@ public class App {
     static String[][] goBoard = new String[9][9];
 
     static boolean[][] lives = new boolean[9][9];
+
     static boolean[][] territory = new boolean[9][9];
     static boolean[][] beenChecked = new boolean[9][9];
 
@@ -89,10 +90,7 @@ public class App {
     static boolean isAlive(Position start) {
         System.out.println("isAlive called on position: " + start.row + ", " + start.col);
         // if space is empty, throw return false
-        if (colorAt(start) == null) {
-            System.out.println("returning false");
-            return false;
-        }
+        if (board[start.row][start.col] == null) return false;
 
         // initialize empty set of positions for has been checked
         Set<Position> visited = new HashSet<Position>();
@@ -100,7 +98,7 @@ public class App {
     }
 
     static boolean hasLiberty(Position piece, String color, Set<Position> visited) {
-        System.out.println("hasLiberty called");
+        System.out.println("hasLiberty called on position " + piece.row + ", " + piece.col);
         if (visited.contains(piece)) {
             System.out.println("base case hit");
             return false;
@@ -109,18 +107,18 @@ public class App {
         visited.add(piece);
 
         List<Position> neighbors = getNeighbors(piece);
-
+        boolean groupHasLiberty = false;
         for (Position neighbor : neighbors) {
             String c = colorAt(neighbor);
             if (c == null) {
-                return true; // found a liberty
-            } else if (c == color) {
-                if (hasLiberty(neighbor, color, visited) == true) {
-                    return true;
+                groupHasLiberty = true;
+            } else if (c.equals(color)) {
+                if (hasLiberty(neighbor, color, visited)) {
+                    groupHasLiberty = true;
                 }
             }
         }
-        return false;
+        return groupHasLiberty;
     }
 
 
@@ -161,42 +159,51 @@ public class App {
         printBoard(board);
 
         // ---- TEST ----
-        // Position pos = new Position(1, 7);
+        Position pos = new Position(3, 1);
+        Set<Position> groupMembers = new HashSet<>();
         // System.out.println("pos.row: " + pos.row);
         // System.out.println(isAlive(pos, color));
         // --------------
+        String color = "●";
+        hasLiberty(pos, color, groupMembers);
 
-        while (true) {
-            String color = player1 ? "●" : "○"; 
-
-            Scanner scn = new Scanner(System.in);
-            int x, y;
-            System.out.println((player1 ? "Player 1's" : "Player 2's") + " turn");
-            System.out.println("Please enter X coord:");
-            x = scn.nextInt();
-            System.out.println("Please enter Y coord:");
-            y = scn.nextInt();
-
-            Position selectedPostion = new Position(x, y);
-
-            System.out.println(isAlive(selectedPostion, color));
-
-            if (board[x][y] != null) {
-                System.out.println("This space is occupied. Try again");
-                continue;
-            }
-
-            if (isAlive(selectedPostion, color)) {
-                placePiece(x, y, player1);
-                player1 = !player1;
-                continue;
-            } else {
-                System.out.println("Illegal move, try again");
-            }
-
-            printBoard(board);
-            System.out.println();
+        System.out.println("group members:");
+        for (Position member: groupMembers) {
+            System.out.println(member);
         }
+
+        // while (true) {
+        //     // in go, player 1 is black
+        //     String color = player1 ? "●" : "○"; 
+
+        //     Scanner scn = new Scanner(System.in);
+        //     int x, y;
+        //     System.out.println((player1 ? "Player 1's" : "Player 2's") + " turn");
+        //     System.out.println("Please enter X coord:");
+        //     x = scn.nextInt();
+        //     System.out.println("Please enter Y coord:");
+        //     y = scn.nextInt();
+
+        //     Position selectedPostion = new Position(x, y);
+
+        //     System.out.println(isAlive(selectedPostion, color));
+
+        //     if (board[x][y] != null) {
+        //         System.out.println("This space is occupied. Try again");
+        //         continue;
+        //     }
+
+        //     if (isAlive(selectedPostion, color)) {
+        //         placePiece(x, y, player1);
+        //         player1 = !player1;
+        //         continue;
+        //     } else {
+        //         System.out.println("Illegal move, try again");
+        //     }
+
+        //     printBoard(board);
+        //     System.out.println();
+        // }
 
         
 
