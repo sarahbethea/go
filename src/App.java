@@ -18,7 +18,7 @@ public class App {
     static String[][] board = 
     {
         {null, null,"●", "●", "○", null, null, "○", null},
-        {null, "●", null, "●", "○", "●", "○", "●", "○"},
+        {null, "●", null, "●", "○", "●", "○", null, "○"},
         {null, "●", null, "●", "○", "●", null, "○", null},
         {"●", "●","●", "○", "○", "●", null, null, null},
         {"●", "○", "○", "○", "●", "●", "●", null, null},
@@ -65,6 +65,20 @@ public class App {
         }
 
         return neighbors;     
+    }
+
+    // overloaded isAlive to accept color as argument
+    static boolean isAlive(Position start, String color) {
+        System.out.println("isAlive called on position: " + start.row + ", " + start.col + ", for color " + color);
+        // // if space is empty, throw return false
+        // if (colorAt(start) == null) {
+        //     System.out.println("returning false");
+        //     return false;
+        // }
+
+        // initialize empty set of positions for has been checked
+        Set<Position> visited = new HashSet<Position>();
+        return hasLiberty(start, color, visited);
     }
 
     static boolean isAlive(Position start) {
@@ -137,12 +151,41 @@ public class App {
 
     public static void main(String[] args) throws Exception {
 
+        boolean player1 = true;
+        String color = player1 ? "○" : "●";
+        
+
         printBoard(board);
 
-        // Test position
-        Position pos = new Position(4, 2);
+        // ---- TEST ----
+        Position pos = new Position(1, 7);
         System.out.println("pos.row: " + pos.row);
-        System.out.println(isAlive(pos));
+        System.out.println(isAlive(pos, color));
+        // --------------
+
+
+        Scanner scn = new Scanner(System.in);
+        int x, y;
+
+        System.out.println((player1 ? "Player 1's" : "Player 2's") + " turn");
+
+        System.out.println("Please enter X coord:");
+        x = scn.nextInt();
+        System.out.println("Please enter Y coord:");
+        y = scn.nextInt();
+
+        Position selectedPostion = new Position(x, y);
+
+        if ((board[x][y] == null) && isAlive(selectedPostion, color)) {
+            placePiece(x, y, player1);
+            player1 = !player1;
+        } else {
+            System.out.println("This space is occupied. Try again");
+        }
+
+        printBoard(board);
+        System.out.println();
+
         
 
 
