@@ -33,6 +33,12 @@ public class GoBoardSwing extends JFrame {
     private Map<App.Position, Integer> stepNumbers = new HashMap<>();
     private int currentStep = 0;
     
+    // Undo system
+    private String lastMoveType = null; // "place", "removePiece", "removeGroup"
+    private App.Position lastMovePosition = null;
+    private String lastMovePiece = null; // What piece was there before
+    private Set<App.Position> lastRemovedGroup = new HashSet<>(); // For group removal
+    
     public GoBoardSwing() {
         // Initialize game logic
         gameLogic = new App();
@@ -299,6 +305,30 @@ public class GoBoardSwing extends JFrame {
             } else if (command.equals("clearDFS")) {
                 clearDFSAnimation();
                 System.out.println("DFS animation cleared.");
+            } else if (command.startsWith("removePiece(") && command.endsWith(")")) {
+                // Parse: removePiece(row, col)
+                String params = command.substring(12, command.length() - 1);
+                String[] parts = params.split(",");
+                if (parts.length == 2) {
+                    int row = Integer.parseInt(parts[0].trim());
+                    int col = Integer.parseInt(parts[1].trim());
+                    removeSinglePiece(row, col);
+                } else {
+                    System.out.println("Error: removePiece requires 2 parameters (row, col)");
+                }
+            } else if (command.startsWith("removeGroup(") && command.endsWith(")")) {
+                // Parse: removeGroup(row, col)
+                String params = command.substring(12, command.length() - 1);
+                String[] parts = params.split(",");
+                if (parts.length == 2) {
+                    int row = Integer.parseInt(parts[0].trim());
+                    int col = Integer.parseInt(parts[1].trim());
+                    removeEntireGroup(row, col);
+                } else {
+                    System.out.println("Error: removeGroup requires 2 parameters (row, col)");
+                }
+            } else if (command.equals("undo")) {
+                undoLastMove();
             } else {
                 System.out.println("Unknown command: " + command);
                 System.out.println("Type 'help' for available commands.");
@@ -318,6 +348,9 @@ public class GoBoardSwing extends JFrame {
         System.out.println("setBlack / black        - Set player to Black (●)");
         System.out.println("animateDFS(row, col)    - Animate DFS traversal (highlights persist)");
         System.out.println("clearDFS                - Manually clear DFS highlights");
+        System.out.println("removePiece(row, col)   - Remove single piece");
+        System.out.println("removeGroup(row, col)   - Remove entire connected group");
+        System.out.println("undo                    - Undo the last move");
         System.out.println("\nGame Method Commands:");
         System.out.println("  isAlive(row, col)              - Test if existing stone is alive");
         System.out.println("  isAlive(row, col, color)       - Test if placing stone would be alive");
@@ -407,7 +440,13 @@ public class GoBoardSwing extends JFrame {
             addMouseListener(new java.awt.event.MouseAdapter() {
                 @Override
                 public void mouseClicked(java.awt.event.MouseEvent e) {
-                    handleBoardClick(e.getX(), e.getY());
+                    if (e.getButton() == java.awt.event.MouseEvent.BUTTON1) {
+                        // Left click - place piece
+                        handleBoardClick(e.getX(), e.getY());
+                    } else if (e.getButton() == java.awt.event.MouseEvent.BUTTON3) {
+                        // Right click - remove piece/group
+                        handleBoardRightClick(e.getX(), e.getY());
+                    }
                 }
             });
         }
@@ -428,6 +467,25 @@ public class GoBoardSwing extends JFrame {
             // Check if click is within board bounds
             if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE) {
                 handleMove(row, col);
+            }
+        }
+        
+        private void handleBoardRightClick(int mouseX, int mouseY) {
+            // Calculate actual board dimensions based on current panel size
+            int panelWidth = getWidth();
+            int panelHeight = getHeight();
+            int actualCellSize = Math.min((panelWidth - 2 * BOARD_MARGIN) / (BOARD_SIZE - 1),
+                                        (panelHeight - 2 * BOARD_MARGIN) / (BOARD_SIZE - 1));
+            int actualMarginX = (panelWidth - actualCellSize * (BOARD_SIZE - 1)) / 2;
+            int actualMarginY = (panelHeight - actualCellSize * (BOARD_SIZE - 1)) / 2;
+            
+            // Convert mouse coordinates to board position
+            int col = Math.round((float)(mouseX - actualMarginX) / actualCellSize);
+            int row = Math.round((float)(mouseY - actualMarginY) / actualCellSize);
+            
+            // Check if click is within board bounds
+            if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE) {
+                handleRightClick(row, col);
             }
         }
         
@@ -587,6 +645,11 @@ public class GoBoardSwing extends JFrame {
         
         System.out.println("LEGAL MOVE: Placing " + playerColor + " stone at (" + row + ", " + col + ")");
         
+        // Track move for undo
+        lastMoveType = "place";
+        lastMovePosition = new App.Position(row, col);
+        lastMovePiece = gameLogic.getBoard()[row][col]; // Should be null for new placement
+        
         // Place the piece using existing game logic (with inverted boolean)
         gameLogic.placePiece(row, col, appPlayer1);
         
@@ -600,6 +663,162 @@ public class GoBoardSwing extends JFrame {
         
         // Check for captures (you can expand this later)
         checkForCaptures(row, col);
+    }
+    
+    private void handleRightClick(int row, int col) {
+        String piece = gameLogic.getBoard()[row][col];
+        
+        if (piece == null) {
+            System.out.println("Right-clicked empty position (" + row + ", " + col + ") - nothing to remove");
+            statusLabel.setText("No piece at this position to remove.");
+            return;
+        }
+        
+        String pieceColor = piece.equals("○") ? "White" : "Black";
+        System.out.println("Right-clicked " + pieceColor + " piece at (" + row + ", " + col + ")");
+        
+        // Show options dialog
+        String[] options = {"Remove Single Piece", "Remove Entire Group", "Cancel"};
+        int choice = JOptionPane.showOptionDialog(
+            this,
+            "What would you like to do with this " + pieceColor + " piece?",
+            "Remove Piece",
+            JOptionPane.YES_NO_CANCEL_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            options,
+            options[0]
+        );
+        
+        if (choice == 0) {
+            // Remove single piece
+            removeSinglePiece(row, col);
+        } else if (choice == 1) {
+            // Remove entire group
+            removeEntireGroup(row, col);
+        }
+        // choice == 2 is Cancel, do nothing
+    }
+    
+    private void removeSinglePiece(int row, int col) {
+        String piece = gameLogic.getBoard()[row][col];
+        String pieceColor = piece.equals("○") ? "White" : "Black";
+        
+        // Track move for undo
+        lastMoveType = "removePiece";
+        lastMovePosition = new App.Position(row, col);
+        lastMovePiece = piece;
+        lastRemovedGroup.clear();
+        
+        gameLogic.getBoard()[row][col] = null;
+        boardPanel.repaint();
+        
+        System.out.println("Removed single " + pieceColor + " piece at (" + row + ", " + col + ")");
+        statusLabel.setText("Removed " + pieceColor + " piece at (" + row + ", " + col + ")");
+    }
+    
+    private void removeEntireGroup(int row, int col) {
+        String piece = gameLogic.getBoard()[row][col];
+        String pieceColor = piece.equals("○") ? "White" : "Black";
+        
+        // Find all connected pieces of the same color
+        Set<App.Position> group = findConnectedGroup(row, col, piece);
+        
+        // Track move for undo
+        lastMoveType = "removeGroup";
+        lastMovePosition = new App.Position(row, col);
+        lastMovePiece = piece;
+        lastRemovedGroup.clear();
+        lastRemovedGroup.addAll(group);
+        
+        // Remove all pieces in the group
+        int removedCount = 0;
+        for (App.Position pos : group) {
+            if (gameLogic.getBoard()[pos.row()][pos.col()] != null) {
+                gameLogic.getBoard()[pos.row()][pos.col()] = null;
+                removedCount++;
+            }
+        }
+        
+        boardPanel.repaint();
+        
+        System.out.println("Removed entire " + pieceColor + " group: " + removedCount + " pieces");
+        statusLabel.setText("Removed " + pieceColor + " group (" + removedCount + " pieces)");
+    }
+    
+    private Set<App.Position> findConnectedGroup(int row, int col, String color) {
+        Set<App.Position> group = new HashSet<>();
+        Set<App.Position> visited = new HashSet<>();
+        
+        findConnectedGroupDFS(new App.Position(row, col), color, group, visited);
+        return group;
+    }
+    
+    private void findConnectedGroupDFS(App.Position pos, String color, Set<App.Position> group, Set<App.Position> visited) {
+        if (visited.contains(pos)) {
+            return;
+        }
+        
+        visited.add(pos);
+        
+        String pieceColor = gameLogic.getBoard()[pos.row()][pos.col()];
+        if (pieceColor != null && pieceColor.equals(color)) {
+            group.add(pos);
+            
+            // Check all neighbors
+            List<App.Position> neighbors = getNeighbors(pos);
+            for (App.Position neighbor : neighbors) {
+                findConnectedGroupDFS(neighbor, color, group, visited);
+            }
+        }
+    }
+    
+    private void undoLastMove() {
+        if (lastMoveType == null) {
+            System.out.println("No moves to undo.");
+            statusLabel.setText("No moves to undo.");
+            return;
+        }
+        
+        System.out.println("Undoing last move: " + lastMoveType + " at (" + 
+            lastMovePosition.row() + ", " + lastMovePosition.col() + ")");
+        
+        switch (lastMoveType) {
+            case "place":
+                // Undo piece placement - remove the placed piece
+                gameLogic.getBoard()[lastMovePosition.row()][lastMovePosition.col()] = null;
+                System.out.println("Undone: Removed placed piece");
+                statusLabel.setText("Undone: Removed placed piece");
+                break;
+                
+            case "removePiece":
+                // Undo single piece removal - restore the piece
+                gameLogic.getBoard()[lastMovePosition.row()][lastMovePosition.col()] = lastMovePiece;
+                String pieceColor = lastMovePiece.equals("○") ? "White" : "Black";
+                System.out.println("Undone: Restored " + pieceColor + " piece");
+                statusLabel.setText("Undone: Restored " + pieceColor + " piece");
+                break;
+                
+            case "removeGroup":
+                // Undo group removal - restore all pieces in the group
+                int restoredCount = 0;
+                for (App.Position pos : lastRemovedGroup) {
+                    gameLogic.getBoard()[pos.row()][pos.col()] = lastMovePiece;
+                    restoredCount++;
+                }
+                String groupColor = lastMovePiece.equals("○") ? "White" : "Black";
+                System.out.println("Undone: Restored " + groupColor + " group (" + restoredCount + " pieces)");
+                statusLabel.setText("Undone: Restored " + groupColor + " group (" + restoredCount + " pieces)");
+                break;
+        }
+        
+        // Clear undo state
+        lastMoveType = null;
+        lastMovePosition = null;
+        lastMovePiece = null;
+        lastRemovedGroup.clear();
+        
+        boardPanel.repaint();
     }
     
     private void updatePlayerDisplay() {
