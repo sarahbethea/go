@@ -73,9 +73,12 @@ public class App {
 
         // initialize empty set of positions for has been checked
         Set<Position> visited = new HashSet<Position>();
-        return hasLiberty(start, color, visited);
+        boolean alive = hasLiberty(start, color, visited);
+        System.out.println("in isAlive, returning: " + alive);
+        return alive;
     }
 
+    // isAlive for checking occupied space
     static boolean isAlive(Position start) {
         System.out.println("isAlive called on position: " + start.row + ", " + start.col);
         // if space is empty, throw return false
@@ -153,33 +156,38 @@ public class App {
         printBoard(board);
 
         // ---- TEST ----
-        Position pos = new Position(1, 7);
-        System.out.println("pos.row: " + pos.row);
-        System.out.println(isAlive(pos, color));
+        // Position pos = new Position(1, 7);
+        // System.out.println("pos.row: " + pos.row);
+        // System.out.println(isAlive(pos, color));
         // --------------
 
+        while (true) {
+            Scanner scn = new Scanner(System.in);
+            int x, y;
 
-        Scanner scn = new Scanner(System.in);
-        int x, y;
+            System.out.println((player1 ? "Player 1's" : "Player 2's") + " turn");
 
-        System.out.println((player1 ? "Player 1's" : "Player 2's") + " turn");
+            System.out.println("Please enter X coord:");
+            x = scn.nextInt();
+            System.out.println("Please enter Y coord:");
+            y = scn.nextInt();
 
-        System.out.println("Please enter X coord:");
-        x = scn.nextInt();
-        System.out.println("Please enter Y coord:");
-        y = scn.nextInt();
+            Position selectedPostion = new Position(x, y);
 
-        Position selectedPostion = new Position(x, y);
+            System.out.println("ISALIVEEEEE");
+            System.out.println(isAlive(selectedPostion, color));
 
-        if ((board[x][y] == null) && isAlive(selectedPostion, color)) {
-            placePiece(x, y, player1);
-            player1 = !player1;
-        } else {
-            System.out.println("This space is occupied. Try again");
+
+            if ((board[x][y] == null) && isAlive(selectedPostion, color)) {
+                placePiece(x, y, player1);
+                player1 = !player1;
+            } else if (board[x][y] != null) {
+                System.out.println("This space is occupied. Try again");
+            }
+
+            printBoard(board);
+            System.out.println();
         }
-
-        printBoard(board);
-        System.out.println();
 
         
 
