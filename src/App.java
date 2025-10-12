@@ -19,10 +19,10 @@ public class App {
     static String[][] board = 
     {
         {null, null,"●", "●", "○", null, null, "○", null},
-        {null, "●", null, "●", "○", "●", "○", null, "○"},
-        {null, "●", null, "●", "○", "●", null, "○", null},
-        {"●", "●","●", "○", "○", "●", null, null, null},
-        {"●", "○", "○", "○", "●", "●", "●", null, null},
+        {null, "●", null, "●", "○", "●", "○", "●", "○"},
+        {null, "●", null, "●", "○", "●", "○", "●", "○"},
+        {"●", "●","●", "○", "○", "●", "○", "●", "○"},
+        {"●", "○", "○", "○", "●", "●", "●", "○", "○"},
         {"○", "○","○", "●", "●", "○", "●", "●", "●"},
         {"○", null, null, "○", "○", "○", "○", "○", "●"},
         {"○", null,"○", "○", null, "○", "○", null, "○"},
@@ -133,21 +133,29 @@ public class App {
     }
 
     static void removePiece(Position piece) {
+        System.out.println("removePiece called");
         board[piece.row][piece.col] = null;
     }
 
     static void removeGroup(Set<Position> group) {
+        System.out.println("removeGroup called");
         for (Position member: group) {
+            System.out.println("member to remove: " + member.row + ", " + member.col);
             removePiece(member);
         }
     }
 
     static void searchAndCapture(Position start) {
+        System.out.println("searchAndCapture called");
         // get neighbors of start piece
         List<Position> neighbors = getNeighbors(start);
         for (Position neighbor: neighbors) {
-            Set<Position> group = new HashSet<>();
-            if (!colorAt(neighbor).equals(colorAt(start))) {
+            String neighborColor = colorAt(neighbor);
+            String startColor = colorAt(start);
+
+            if (neighborColor != null && !neighborColor.equals(startColor)) {
+                Set<Position> group = new HashSet<>();
+                System.out.println("searchAndCapture calls hasLiberty on neighbor: " + neighbor.row + ", " + neighbor.col);
                 if (!hasLiberty(neighbor, colorAt(neighbor), group)) {
                     removeGroup(group);
                 }
@@ -193,19 +201,21 @@ public class App {
         printBoard(board);
 
         // ---- TEST ----
-        Position pos = new Position(2, 7);
+        Position pos = new Position(1, 8);
         Set<Position> groupMembers = new HashSet<>();
         // System.out.println("pos.row: " + pos.row);
         // System.out.println(isAlive(pos, color));
         // --------------
         // "○" "●"
         String color = "○";
-        hasLiberty(pos, color, groupMembers);
+        searchAndCapture(pos);
 
-        System.out.println("group members:");
-        for (Position member: groupMembers) {
-            System.out.println(member);
-        }
+        printBoard(board);
+
+        // System.out.println("group members:");
+        // for (Position member: groupMembers) {
+        //     System.out.println(member);
+        // }
 
         // while (true) {
         //     // in go, player 1 is black
