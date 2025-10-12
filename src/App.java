@@ -33,6 +33,17 @@ public class App {
     public String[][] getBoard() {
         return board;
     }
+    
+    // Method to reset the board to initial state
+    public static void resetBoard() {
+        System.out.println("Resetting board to initial state...");
+        for (int i = 0; i < board.length; i++) {
+            for (int j = 0; j < board[i].length; j++) {
+                board[i][j] = null;
+            }
+        }
+        System.out.println("Board reset complete.");
+    }
 
     private static boolean inBounds(int r, int c) {
         return r >= 0 && r < board.length && c >= 0 && c < board[0].length;
