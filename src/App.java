@@ -71,11 +71,18 @@ public class App {
     static boolean isAlive(Position start, String color) {
         System.out.println("isAlive called on position: " + start.row + ", " + start.col + ", for color " + color);
 
-        // initialize empty set of positions for has been checked
-        Set<Position> visited = new HashSet<Position>();
-        boolean alive = hasLiberty(start, color, visited);
-        System.out.println("in isAlive, returning: " + alive);
-        return alive;
+        String prev = board[start.row][start.col]; // before temporarily placing piece, should be null
+        // temporarily place piece
+        board[start.row][start.col] = color;
+        try {
+            Set<Position> visited = new HashSet<>();
+            boolean alive = hasLiberty(start, color, visited);
+            System.out.println("in isAlive, returning: " + alive);
+            return alive;
+        } finally {
+            // replace piece back to null
+            board[start.row][start.col] = prev;
+        }
     }
 
     // isAlive for checking occupied space
@@ -150,9 +157,7 @@ public class App {
     public static void main(String[] args) throws Exception {
 
         boolean player1 = true;
-        String color = player1 ? "○" : "●";
         
-
         printBoard(board);
 
         // ---- TEST ----
@@ -162,11 +167,11 @@ public class App {
         // --------------
 
         while (true) {
+            String color = player1 ? "○" : "●"; 
+
             Scanner scn = new Scanner(System.in);
             int x, y;
-
             System.out.println((player1 ? "Player 1's" : "Player 2's") + " turn");
-
             System.out.println("Please enter X coord:");
             x = scn.nextInt();
             System.out.println("Please enter Y coord:");
@@ -177,12 +182,17 @@ public class App {
             System.out.println("ISALIVEEEEE");
             System.out.println(isAlive(selectedPostion, color));
 
+            if (board[x][y] != null) {
+                System.out.println("This space is occupied. Try again");
+                continue;
+            }
 
-            if ((board[x][y] == null) && isAlive(selectedPostion, color)) {
+            if (isAlive(selectedPostion, color)) {
                 placePiece(x, y, player1);
                 player1 = !player1;
-            } else if (board[x][y] != null) {
-                System.out.println("This space is occupied. Try again");
+                continue;
+            } else {
+                System.out.println("Illegal move, try again");
             }
 
             printBoard(board);
