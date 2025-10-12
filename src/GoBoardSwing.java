@@ -204,17 +204,38 @@ public class GoBoardSwing extends JFrame {
                 debugConsole.setText("");
                 System.out.println("Console cleared.");
             } else if (command.startsWith("isAlive(") && command.endsWith(")")) {
-                // Parse: isAlive(row, col)
+                // Parse: isAlive(row, col) or isAlive(row, col, color)
                 String params = command.substring(8, command.length() - 1);
                 String[] parts = params.split(",");
                 if (parts.length == 2) {
+                    // Original isAlive(row, col) - for occupied spaces
                     int row = Integer.parseInt(parts[0].trim());
                     int col = Integer.parseInt(parts[1].trim());
                     App.Position pos = new App.Position(row, col);
                     boolean result = App.isAlive(pos);
                     System.out.println("Result: " + result);
+                } else if (parts.length == 3) {
+                    // Overloaded isAlive(row, col, color) - for unoccupied spaces
+                    int row = Integer.parseInt(parts[0].trim());
+                    int col = Integer.parseInt(parts[1].trim());
+                    String colorInput = parts[2].trim().replaceAll("\"", "").toLowerCase(); // Remove quotes and convert to lowercase
+                    
+                    // Convert "white"/"black" to App.java symbols
+                    String color;
+                    if (colorInput.equals("white") || colorInput.equals("w")) {
+                        color = "○"; // White in App.java
+                    } else if (colorInput.equals("black") || colorInput.equals("b")) {
+                        color = "●"; // Black in App.java
+                    } else {
+                        System.out.println("Error: Color must be 'white', 'black', 'w', or 'b'");
+                        return;
+                    }
+                    
+                    App.Position pos = new App.Position(row, col);
+                    boolean result = App.isAlive(pos, color);
+                    System.out.println("Result: " + result);
                 } else {
-                    System.out.println("Error: isAlive requires 2 parameters (row, col)");
+                    System.out.println("Error: isAlive requires 2 parameters (row, col) or 3 parameters (row, col, color)");
                 }
             } else if (command.startsWith("placePiece(") && command.endsWith(")")) {
                 // Parse: placePiece(row, col, isWhite)
@@ -224,9 +245,11 @@ public class GoBoardSwing extends JFrame {
                     int row = Integer.parseInt(parts[0].trim());
                     int col = Integer.parseInt(parts[1].trim());
                     boolean isWhite = Boolean.parseBoolean(parts[2].trim());
-                    gameLogic.placePiece(row, col, isWhite);
+                    // Convert GUI isWhite to App.java logic: isWhite=true → player1=false, isWhite=false → player1=true
+                    boolean appPlayer1 = !isWhite;
+                    gameLogic.placePiece(row, col, appPlayer1);
                     boardPanel.repaint();
-                    System.out.println("Stone placed at (" + row + ", " + col + ") - " + (isWhite ? "White" : "Black"));
+                    System.out.println("Stone placed at (" + row + ", " + col + ") - " + (isWhite ? "White (○)" : "Black (●)"));
                 } else {
                     System.out.println("Error: placePiece requires 3 parameters (row, col, isWhite)");
                 }
@@ -235,7 +258,7 @@ public class GoBoardSwing extends JFrame {
                 App.printBoard(gameLogic.getBoard());
             } else if (command.equals("reset")) {
                 // Reset board to initial state
-                gameLogic = new App();
+                App.resetBoard();
                 boardPanel.repaint();
                 System.out.println("Board reset to initial state.");
             } else if (command.equals("setWhite") || command.equals("white")) {
@@ -264,13 +287,16 @@ public class GoBoardSwing extends JFrame {
         System.out.println("setWhite / white        - Set player to White (○)");
         System.out.println("setBlack / black        - Set player to Black (●)");
         System.out.println("\nGame Method Commands:");
-        System.out.println("  isAlive(row, col)              - Test if stone is alive");
+        System.out.println("  isAlive(row, col)              - Test if existing stone is alive");
+        System.out.println("  isAlive(row, col, color)       - Test if placing stone would be alive");
         System.out.println("  placePiece(row, col, isWhite)  - Place a stone");
         System.out.println("  printBoard()                   - Display board state");
         System.out.println("\nExamples:");
-        System.out.println("  isAlive(4, 2)");
-        System.out.println("  placePiece(3, 5, true)");
-        System.out.println("  printBoard()");
+        System.out.println("  isAlive(4, 2)                  - Check existing stone");
+        System.out.println("  isAlive(4, 4, \"white\")        - Check if white (○) stone would live");
+        System.out.println("  isAlive(3, 3, \"black\")        - Check if black (●) stone would live");
+        System.out.println("  placePiece(3, 5, true)         - Place white stone");
+        System.out.println("  printBoard()                   - Show board");
         System.out.println("========================\n");
     }
     
@@ -293,12 +319,20 @@ public class GoBoardSwing extends JFrame {
         System.out.println();
         
         System.out.println(" GAME LOGIC METHODS:");
-        System.out.println("  isAlive(row, col)              - Check if stone has liberties");
+        System.out.println("  isAlive(row, col)              - Check if existing stone has liberties");
         System.out.println("    Parameters:");
         System.out.println("      row (0-8)     - Row coordinate");
         System.out.println("      col (0-8)     - Column coordinate");
         System.out.println("    Returns: true if stone is alive, false if captured");
         System.out.println("    Example: isAlive(4, 2)");
+        System.out.println();
+        System.out.println("  isAlive(row, col, color)       - Check if placing stone would be alive");
+        System.out.println("    Parameters:");
+        System.out.println("      row (0-8)     - Row coordinate");
+        System.out.println("      col (0-8)     - Column coordinate");
+        System.out.println("      color         - \"white\" (○), \"black\" (●), \"w\", or \"b\"");
+        System.out.println("    Returns: true if stone would be alive, false if suicide");
+        System.out.println("    Example: isAlive(4, 4, \"white\")");
         System.out.println();
         
         System.out.println(" UTILITY COMMANDS:");
@@ -443,14 +477,39 @@ public class GoBoardSwing extends JFrame {
     }
     
     private void handleMove(int row, int col) {
+        // Convert GUI player1Turn to App.java logic
+        // In GUI: player1Turn=true means White, player1Turn=false means Black
+        // In App: player1=true means Black (●), player1=false means White (○)
+        // So we need to invert: GUI player1Turn → App !player1Turn
+        boolean appPlayer1 = !player1Turn;
+        String playerColor = player1Turn ? "White (○)" : "Black (●)";
+        System.out.println("Attempting to place " + playerColor + " stone at (" + row + ", " + col + ")");
+        
         // Check if position is empty
         if (gameLogic.getBoard()[row][col] != null) {
+            String currentPiece = gameLogic.getBoard()[row][col];
+            System.out.println("ILLEGAL MOVE: Position (" + row + ", " + col + ") is occupied by " + currentPiece);
             statusLabel.setText("Position occupied! Try another spot.");
             return;
         }
         
-        // Place the piece using existing game logic
-        gameLogic.placePiece(row, col, player1Turn);
+        // Check if the move would be legal (not suicide)
+        App.Position pos = new App.Position(row, col);
+        String colorSymbol = appPlayer1 ? "●" : "○"; // App.java symbols
+        boolean wouldBeAlive = App.isAlive(pos, colorSymbol);
+        
+        if (!wouldBeAlive) {
+            System.out.println("ILLEGAL MOVE: Placing " + playerColor + " at (" + row + ", " + col + ") would be suicide (no liberties)");
+            statusLabel.setText("Illegal move! That would be suicide.");
+            return;
+        }
+        
+        System.out.println("LEGAL MOVE: Placing " + playerColor + " stone at (" + row + ", " + col + ")");
+        
+        // Place the piece using existing game logic (with inverted boolean)
+        gameLogic.placePiece(row, col, appPlayer1);
+        
+        System.out.println("Stone successfully placed at (" + row + ", " + col + ")");
         
         // Refresh the board display
         boardPanel.repaint();
