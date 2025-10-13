@@ -329,6 +329,20 @@ public class GoBoardSwing extends JFrame {
                 }
             } else if (command.equals("undo")) {
                 undoLastMove();
+            } else if (command.startsWith("searchAndCapture(") && command.endsWith(")")) {
+                // Parse: searchAndCapture(row, col)
+                String params = command.substring(17, command.length() - 1);
+                String[] parts = params.split(",");
+                if (parts.length == 2) {
+                    int row = Integer.parseInt(parts[0].trim());
+                    int col = Integer.parseInt(parts[1].trim());
+                    App.Position pos = new App.Position(row, col);
+                    App.searchAndCapture(pos);
+                    boardPanel.repaint();
+                    System.out.println("Applied searchAndCapture at (" + row + ", " + col + ")");
+                } else {
+                    System.out.println("Error: searchAndCapture requires 2 parameters (row, col)");
+                }
             } else {
                 System.out.println("Unknown command: " + command);
                 System.out.println("Type 'help' for available commands.");
@@ -350,6 +364,7 @@ public class GoBoardSwing extends JFrame {
         System.out.println("clearDFS                - Manually clear DFS highlights");
         System.out.println("removePiece(row, col)   - Remove single piece");
         System.out.println("removeGroup(row, col)   - Remove entire connected group");
+        System.out.println("searchAndCapture(row, col) - Check for captures from position");
         System.out.println("undo                    - Undo the last move");
         System.out.println("\nGame Method Commands:");
         System.out.println("  isAlive(row, col)              - Test if existing stone is alive");
@@ -661,7 +676,7 @@ public class GoBoardSwing extends JFrame {
         // Update status (don't auto-switch turns for testing)
         statusLabel.setText("Stone placed! Click player buttons to change color.");
         
-        // Check for captures (you can expand this later)
+        // Check for captures using searchAndCapture
         checkForCaptures(row, col);
     }
     
@@ -828,9 +843,41 @@ public class GoBoardSwing extends JFrame {
     
     
     private void checkForCaptures(int row, int col) {
-        // This is where you can integrate your capture logic later
-        // For now, just a placeholder
-        statusLabel.setText("Move placed! (Capture detection coming soon)");
+        // Use searchAndCapture to check for captures after placing a piece
+        App.Position pos = new App.Position(row, col);
+        
+        // Store the board state before capture
+        String[][] boardBeforeCapture = new String[9][9];
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                boardBeforeCapture[i][j] = gameLogic.getBoard()[i][j];
+            }
+        }
+        
+        // Apply searchAndCapture
+        App.searchAndCapture(pos);
+        
+        // Check if any pieces were captured
+        boolean capturesFound = false;
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                if (boardBeforeCapture[i][j] != null && gameLogic.getBoard()[i][j] == null) {
+                    capturesFound = true;
+                    break;
+                }
+            }
+            if (capturesFound) break;
+        }
+        
+        if (capturesFound) {
+            System.out.println("Captures found! Opponent pieces removed.");
+            statusLabel.setText("Stone placed! Captures made.");
+        } else {
+            statusLabel.setText("Stone placed! No captures.");
+        }
+        
+        // Refresh the board to show captures
+        boardPanel.repaint();
     }
     
     // Animated DFS visualization method
