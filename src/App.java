@@ -1,8 +1,10 @@
 import java.util.Scanner;
 import java.util.Set;
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 
 public class App {
@@ -146,9 +148,15 @@ public class App {
         }
     }
 
+    static void incrementCaptured(Map<String, Integer> capturedPieces, int n, String color) {
+        int numCaptured = capturedPieces.get(color) + n;
+        capturedPieces.put(color, numCaptured);
+
+    }
+
 
     // if pieces to capture, remove them and return number of pieces captured, else return 0
-    static boolean searchAndCapture(Position start, String startColor) {
+    static boolean searchAndCapture(Map<String, Integer> capturedPieces, Position start, String startColor) {
         System.out.println("searchAndCapture start color: " + startColor);
 
         //temporarily place piece
@@ -163,7 +171,8 @@ public class App {
             if (neighborColor != null && !neighborColor.equals(startColor)) {
                 Set<Position> group = new HashSet<>();
                 System.out.println("searchAndCapture calls hasLiberty on neighbor: " + neighbor.row + ", " + neighbor.col);
-                if (!hasLiberty(neighbor, colorAt(neighbor), group)) {
+                if (!hasLiberty(neighbor, neighborColor, group)) {
+                    incrementCaptured(capturedPieces, group.size(), neighborColor);
                     removeGroup(group);
                     canCapture = true;
                 }
@@ -240,6 +249,13 @@ public class App {
         // Initialize prevBoard states
         String[][] prevBoard = new String[board.length][board[0].length];
         String[][] prevPrevBoard = new String[board.length][board[0].length];
+
+        Map<String, Integer> capturedPieces = new HashMap<>();
+        capturedPieces.put("○", 0);
+        capturedPieces.put("●", 0);
+        
+
+
 
 
         // // ---- TEST ----
