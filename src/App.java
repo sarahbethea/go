@@ -2,6 +2,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 
 public class App {
@@ -18,11 +19,11 @@ public class App {
     //populated board for testing
     static String[][] board = 
     {
-        {null, null,"●", "●", "○", null, null, "○", null},
-        {null, "●", null, "●", "○", "●", "○", "●", "○"},
-        {null, "●", null, "●", "○", "●", "○", "●", "○"},
-        {"●", "●","●", "○", "○", "●", "○", "●", "○"},
-        {"●", "○", "○", "○", "●", "●", "●", "○", "○"},
+        {null, null, "●", "●", "●", null, null, null, null},
+        {null, null, "●", "○", "○", "●", null, null, null},
+        {null, null, "●", "○", null, "○", null, null, null},
+        {null, null, null, "●", "○", null, null, null, null},
+        {null, null, null, null, null, null, null, null, null},
         {"○", "○","○", "●", "●", "○", "●", "●", "●"},
         {"○", null, null, "○", "○", "○", "○", "○", "●"},
         {"○", null,"○", "○", null, "○", "○", null, "○"},
@@ -145,22 +146,48 @@ public class App {
         }
     }
 
-    static void searchAndCapture(Position start) {
-        System.out.println("searchAndCapture called");
+
+    // if pieces to capture, remove them and return number of pieces captured, else return 0
+    static boolean searchAndCapture(Position start, String startColor) {
+        System.out.println("searchAndCapture start color: " + startColor);
+
+        //temporarily place piece
+        board[start.row][start.col] = startColor;
+        boolean canCapture = false;
         // get neighbors of start piece
         List<Position> neighbors = getNeighbors(start);
         for (Position neighbor: neighbors) {
             String neighborColor = colorAt(neighbor);
-            String startColor = colorAt(start);
+            // String startColor = colorAt(start);
 
             if (neighborColor != null && !neighborColor.equals(startColor)) {
                 Set<Position> group = new HashSet<>();
                 System.out.println("searchAndCapture calls hasLiberty on neighbor: " + neighbor.row + ", " + neighbor.col);
                 if (!hasLiberty(neighbor, colorAt(neighbor), group)) {
                     removeGroup(group);
+                    canCapture = true;
                 }
             }
+
         }
+        System.out.println("canCapture: " + canCapture);
+        // if nothing to capture, reset start position to null, dont place piece
+        if (!canCapture) board[start.row][start.col] = null;
+        return canCapture;
+    }
+
+    static String[][] copyBoard(String[][] board) {
+        String[][] copy = new String[board.length][board[0].length];
+        for (int i = 0; i < board.length; i++) {
+            for (int j = 0; j < board[0].length; j++) {
+                copy[i][j] = board[i][j];
+            }
+        }
+        return copy;
+    }
+
+    static boolean boardEquals(String[][] a, String[][] b) {
+        return Arrays.deepEquals(a, b);
     }
 
 
@@ -186,69 +213,104 @@ public class App {
         }
     }
 
-    static void placePiece(int x, int y, Boolean player1) {
+    static void placePiece(Position pos, Boolean player1) {
         if (player1 == true) {
-            board[x][y] = "●";
+            board[pos.row][pos.col] = "●";
         } else {
-            board[x][y] = "○";
+            board[pos.row][pos.col] = "○";
         }
+    }
+
+    static boolean passKoRule(Position pos, String color, String[][] prevPrevBoard) {
+        // temporarily place piece
+        board[pos.row][pos.col] = color;
+        String[][] tempBoard = copyBoard(board);
+        boolean isLegit = !boardEquals(tempBoard, prevPrevBoard);
+        // restore board state
+        board[pos.row][pos.col] = null;
+        return isLegit;
     }
 
     public static void main(String[] args) throws Exception {
 
         boolean player1 = true;
-        
-        printBoard(board);
-
-        // ---- TEST ----
-        Position pos = new Position(1, 8);
-        Set<Position> groupMembers = new HashSet<>();
-        // System.out.println("pos.row: " + pos.row);
-        // System.out.println(isAlive(pos, color));
-        // --------------
-        // "○" "●"
-        String color = "○";
-        searchAndCapture(pos);
 
         printBoard(board);
+
+        // Initialize prevBoard states
+        String[][] prevBoard = new String[board.length][board[0].length];
+        String[][] prevPrevBoard = new String[board.length][board[0].length];
+
+
+        // // ---- TEST ----
+        // Position pos = new Position(2, 4);
+        // Set<Position> groupMembers = new HashSet<>();
+        // // System.out.println("pos.row: " + pos.row);
+        // // System.out.println(isAlive(pos, color));
+        // // --------------
+        // // "○" "●"
+        // String color = "●";
+        // boolean canCapture = searchAndCapture(pos, color);
+        // System.out.println("CANCAPTURE: " + canCapture);
+
+        // printBoard(board);
 
         // System.out.println("group members:");
         // for (Position member: groupMembers) {
         //     System.out.println(member);
         // }
 
-        // while (true) {
-        //     // in go, player 1 is black
-        //     String color = player1 ? "●" : "○"; 
+        while (true) {
+            prevPrevBoard = copyBoard(prevBoard);
+            prevBoard = copyBoard(board);
+            // in go, player 1 is black
+            String color = player1 ? "●" : "○"; 
 
-        //     Scanner scn = new Scanner(System.in);
-        //     int x, y;
-        //     System.out.println((player1 ? "Player 1's" : "Player 2's") + " turn");
-        //     System.out.println("Please enter X coord:");
-        //     x = scn.nextInt();
-        //     System.out.println("Please enter Y coord:");
-        //     y = scn.nextInt();
+            Scanner scn = new Scanner(System.in);
+            int x, y;
+            System.out.println((player1 ? "Player 1's" : "Player 2's") + " turn");
+            System.out.println("Please enter X coord:");
+            x = scn.nextInt();
+            System.out.println("Please enter Y coord:");
+            y = scn.nextInt();
 
-        //     Position selectedPostion = new Position(x, y);
+            Position selectedPostion = new Position(x, y);
 
-        //     System.out.println(isAlive(selectedPostion, color));
+            System.out.println(isAlive(selectedPostion, color));
 
-        //     if (board[x][y] != null) {
-        //         System.out.println("This space is occupied. Try again");
-        //         continue;
-        //     }
 
-        //     if (isAlive(selectedPostion, color)) {
-        //         placePiece(x, y, player1);
-        //         player1 = !player1;
-        //         continue;
-        //     } else {
-        //         System.out.println("Illegal move, try again");
-        //     }
+            if (board[x][y] != null) {
+                System.out.println("This space is occupied. Try again");
+                continue;
+            }
 
-        //     printBoard(board);
-        //     System.out.println();
-        // }
+            if (isAlive(selectedPostion, color)) {
+                System.out.println("isAlive for this position" + isAlive(selectedPostion, color));
+                if (passKoRule(selectedPostion, color, prevPrevBoard)) {
+                    placePiece(selectedPostion, player1);
+                    player1 = !player1;
+                }
+            
+            } else {
+                if (searchAndCapture(selectedPostion, color)) {
+                    if (passKoRule(selectedPostion, color, prevPrevBoard)) {
+                        System.out.println("searchAndCapture returns: " + searchAndCapture(selectedPostion, color));
+                        player1 = !player1;
+                    }
+                } 
+            }
+
+            
+
+
+            printBoard(board);
+            System.out.println("prevBoard:");
+            printBoard(prevBoard);
+            System.out.println("prevPrevBoard");
+            printBoard(prevPrevBoard);
+            System.out.println();
+
+        }
 
         
 
