@@ -173,6 +173,7 @@ public class App {
                 System.out.println("searchAndCapture calls hasLiberty on neighbor: " + neighbor.row + ", " + neighbor.col);
                 if (!hasLiberty(neighbor, neighborColor, group)) {
                     incrementCaptured(capturedPieces, group.size(), neighborColor);
+                    System.out.println("group size in searchAndCapture: " + group.size());
                     removeGroup(group);
                     canCapture = true;
                 }
@@ -250,9 +251,9 @@ public class App {
         String[][] prevBoard = new String[board.length][board[0].length];
         String[][] prevPrevBoard = new String[board.length][board[0].length];
 
-        Map<String, Integer> capturedPieces = new HashMap<>();
-        capturedPieces.put("○", 0);
-        capturedPieces.put("●", 0);
+        Map<String, Integer> captured = new HashMap<>();
+        captured.put("○", 0);
+        captured.put("●", 0);
         
 
 
@@ -277,6 +278,10 @@ public class App {
         // }
 
         while (true) {
+            // Map<String, Integer> captured = new HashMap<>();
+            // captured.put("●", 0);
+            // captured.put("○", 0);
+
             prevPrevBoard = copyBoard(prevBoard);
             prevBoard = copyBoard(board);
             // in go, player 1 is black
@@ -308,9 +313,9 @@ public class App {
                 }
             
             } else {
-                if (searchAndCapture(selectedPostion, color)) {
+                if (searchAndCapture(captured, selectedPostion, color)) {
                     if (passKoRule(selectedPostion, color, prevPrevBoard)) {
-                        System.out.println("searchAndCapture returns: " + searchAndCapture(selectedPostion, color));
+                        System.out.println("searchAndCapture returns: " + searchAndCapture(captured, selectedPostion, color));
                         player1 = !player1;
                     }
                 } 
@@ -318,7 +323,7 @@ public class App {
 
             
 
-
+            System.out.println("captured pieces: " + captured.get("○"));
             printBoard(board);
             System.out.println("prevBoard:");
             printBoard(prevBoard);
