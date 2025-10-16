@@ -16,7 +16,7 @@ public class App {
     static boolean[][] lives = new boolean[9][9];
 
     static boolean[][] territory = new boolean[9][9];
-    static boolean[][] beenChecked = new boolean[9][9];
+    static boolean[][] beenVisited = new boolean[9][9];
 
     //populated board for testing
     static String[][] board = 
@@ -111,6 +111,48 @@ public class App {
         return hasLiberty(start, colorAt(start), visited);
     }
 
+    // -------------------- SCORE EMPTY REGION -------------------------
+    // make boolean array beenVisited and pass it in at scoring time
+    // this will be called after dead pieces are removed
+
+    static void scoreEmptyRegion(Position start, Map<String, Integer> territory, boolean[][] beenVisited) {
+        // if position is not null or has been visited, return
+        if (colorAt(start) != null || beenVisited[start.row][start.col] == true) return;
+
+        // Initialize set for borderColor and list for region
+        Set<String> borderColors = new HashSet<>();
+        List<Position> region = new ArrayList<>();
+
+        dfsEmpty(start, beenVisited, borderColors, region);
+
+        if (borderColors.equals(Set.of("●"))) {
+            int newTerritory = territory.get("●") + region.size();
+            territory.put("●", newTerritory);
+        } else if (borderColors.equals(Set.of("○"))) {
+            int newTerritory = territory.get("○") + region.size();
+            territory.put("○", newTerritory);
+        }
+
+    }
+
+    static void dfsEmpty(Position pos, boolean[][] beenVisited, Set<String> borderColors, List<Position> region) {
+        beenVisited[pos.row][pos.col] = true;
+        region.add(pos);
+
+        for (Position p : getNeighbors(pos)) {
+            String color = colorAt(p);
+            if (color == null && !beenVisited[p.row][p.col]) {
+                dfsEmpty(p, beenVisited, borderColors, region);
+            } else {
+                borderColors.add(color);
+            }
+        }
+    }
+
+    // -------------------- SCORE EMPTY REGION -------------------------
+
+
+
     static boolean hasLiberty(Position piece, String color, Set<Position> visited) {
         System.out.println("hasLiberty called on position " + piece.row + ", " + piece.col);
         if (visited.contains(piece)) {
@@ -153,6 +195,8 @@ public class App {
         capturedPieces.put(color, numCaptured);
 
     }
+
+    
 
 
     // if pieces to capture, remove them and return number of pieces captured, else return 0
@@ -253,7 +297,7 @@ public class App {
 
         Map<String, Integer> captured = new HashMap<>();
         captured.put("○", 0);
-        captured.put("●", 0);
+        captured.put("●", 0); 
         
 
 
