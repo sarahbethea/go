@@ -34,7 +34,7 @@ public class App {
     };
     
     // Method to access the board from GUI
-    public String[][] getBoard() {
+    public static String[][] getBoard() {
         return board;
     }
     
@@ -267,7 +267,7 @@ public class App {
         }
     }
 
-    static void placePiece(Position pos, Boolean player1) {
+    static void placePiece(Position pos, boolean player1) {
         if (player1 == true) {
             board[pos.row][pos.col] = "●";
         } else {

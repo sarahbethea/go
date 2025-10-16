@@ -20,8 +20,7 @@ public class GoBoardSwing extends JFrame {
     private JTextArea debugConsole;
     private PrintStream originalOut;
     
-    // Reference to the game logic from App.java
-    private App gameLogic;
+    // Reference to the game logic from App.java (removed - using static methods now)
     
     // DFS Animation fields
     private Set<App.Position> dfsVisited = new HashSet<>();
@@ -40,8 +39,7 @@ public class GoBoardSwing extends JFrame {
     private Set<App.Position> lastRemovedGroup = new HashSet<>(); // For group removal
     
     public GoBoardSwing() {
-        // Initialize game logic
-        gameLogic = new App();
+        // Initialize game logic (using static methods now)
         
         // Set up the frame
         setTitle("Go Board Game");
@@ -269,7 +267,7 @@ public class GoBoardSwing extends JFrame {
                     boolean isWhite = Boolean.parseBoolean(parts[2].trim());
                     // Convert GUI isWhite to App.java logic: isWhite=true → player1=false, isWhite=false → player1=true
                     boolean appPlayer1 = !isWhite;
-                    gameLogic.placePiece(row, col, appPlayer1);
+                    App.placePiece(new App.Position(row, col), appPlayer1);
                     boardPanel.repaint();
                     System.out.println("Stone placed at (" + row + ", " + col + ") - " + (isWhite ? "White (○)" : "Black (●)"));
                 } else {
@@ -277,7 +275,7 @@ public class GoBoardSwing extends JFrame {
                 }
             } else if (command.equals("printBoard")) {
                 System.out.println("Current board state:");
-                App.printBoard(gameLogic.getBoard());
+                App.printBoard(App.getBoard());
             } else if (command.equals("reset")) {
                 // Reset board to initial state
                 App.resetBoard();
@@ -337,7 +335,16 @@ public class GoBoardSwing extends JFrame {
                     int row = Integer.parseInt(parts[0].trim());
                     int col = Integer.parseInt(parts[1].trim());
                     App.Position pos = new App.Position(row, col);
-                    App.searchAndCapture(pos);
+                    // Create a temporary captured pieces map for the call
+                    Map<String, Integer> capturedPieces = new HashMap<>();
+                    capturedPieces.put("○", 0);
+                    capturedPieces.put("●", 0);
+                    
+                    // Determine the color of the piece at this position
+                    String pieceColor = App.getBoard()[row][col];
+                    if (pieceColor != null) {
+                        App.searchAndCapture(capturedPieces, pos, pieceColor);
+                    }
                     boardPanel.repaint();
                     System.out.println("Applied searchAndCapture at (" + row + ", " + col + ")");
                 } else {
@@ -553,7 +560,7 @@ public class GoBoardSwing extends JFrame {
             // Draw stones on intersections
             for (int row = 0; row < BOARD_SIZE; row++) {
                 for (int col = 0; col < BOARD_SIZE; col++) {
-                    String piece = gameLogic.getBoard()[row][col];
+                    String piece = App.getBoard()[row][col];
                     if (piece != null) {
                         int x = actualMarginX + col * actualCellSize;
                         int y = actualMarginY + row * actualCellSize;
@@ -640,8 +647,8 @@ public class GoBoardSwing extends JFrame {
         System.out.println("Attempting to place " + playerColor + " stone at (" + row + ", " + col + ")");
         
         // Check if position is empty
-        if (gameLogic.getBoard()[row][col] != null) {
-            String currentPiece = gameLogic.getBoard()[row][col];
+        if (App.getBoard()[row][col] != null) {
+            String currentPiece = App.getBoard()[row][col];
             System.out.println("ILLEGAL MOVE: Position (" + row + ", " + col + ") is occupied by " + currentPiece);
             statusLabel.setText("Position occupied! Try another spot.");
             return;
@@ -660,13 +667,17 @@ public class GoBoardSwing extends JFrame {
         
         System.out.println("LEGAL MOVE: Placing " + playerColor + " stone at (" + row + ", " + col + ")");
         
+        // Check for captures BEFORE placing the piece
+        checkForCaptures(row, col, colorSymbol);
+        
         // Track move for undo
         lastMoveType = "place";
         lastMovePosition = new App.Position(row, col);
-        lastMovePiece = gameLogic.getBoard()[row][col]; // Should be null for new placement
+        lastMovePiece = App.getBoard()[row][col]; // Should be null for new placement
         
         // Place the piece using existing game logic (with inverted boolean)
-        gameLogic.placePiece(row, col, appPlayer1);
+        App.placePiece(new App.Position(row, col), appPlayer1);
+        
         
         System.out.println("Stone successfully placed at (" + row + ", " + col + ")");
         
@@ -675,13 +686,10 @@ public class GoBoardSwing extends JFrame {
         
         // Update status (don't auto-switch turns for testing)
         statusLabel.setText("Stone placed! Click player buttons to change color.");
-        
-        // Check for captures using searchAndCapture
-        checkForCaptures(row, col);
     }
     
     private void handleRightClick(int row, int col) {
-        String piece = gameLogic.getBoard()[row][col];
+        String piece = App.getBoard()[row][col];
         
         if (piece == null) {
             System.out.println("Right-clicked empty position (" + row + ", " + col + ") - nothing to remove");
@@ -716,7 +724,7 @@ public class GoBoardSwing extends JFrame {
     }
     
     private void removeSinglePiece(int row, int col) {
-        String piece = gameLogic.getBoard()[row][col];
+        String piece = App.getBoard()[row][col];
         String pieceColor = piece.equals("○") ? "White" : "Black";
         
         // Track move for undo
@@ -725,7 +733,7 @@ public class GoBoardSwing extends JFrame {
         lastMovePiece = piece;
         lastRemovedGroup.clear();
         
-        gameLogic.getBoard()[row][col] = null;
+        App.getBoard()[row][col] = null;
         boardPanel.repaint();
         
         System.out.println("Removed single " + pieceColor + " piece at (" + row + ", " + col + ")");
@@ -733,7 +741,7 @@ public class GoBoardSwing extends JFrame {
     }
     
     private void removeEntireGroup(int row, int col) {
-        String piece = gameLogic.getBoard()[row][col];
+        String piece = App.getBoard()[row][col];
         String pieceColor = piece.equals("○") ? "White" : "Black";
         
         // Find all connected pieces of the same color
@@ -749,8 +757,8 @@ public class GoBoardSwing extends JFrame {
         // Remove all pieces in the group
         int removedCount = 0;
         for (App.Position pos : group) {
-            if (gameLogic.getBoard()[pos.row()][pos.col()] != null) {
-                gameLogic.getBoard()[pos.row()][pos.col()] = null;
+            if (App.getBoard()[pos.row()][pos.col()] != null) {
+                App.getBoard()[pos.row()][pos.col()] = null;
                 removedCount++;
             }
         }
@@ -776,7 +784,7 @@ public class GoBoardSwing extends JFrame {
         
         visited.add(pos);
         
-        String pieceColor = gameLogic.getBoard()[pos.row()][pos.col()];
+        String pieceColor = App.getBoard()[pos.row()][pos.col()];
         if (pieceColor != null && pieceColor.equals(color)) {
             group.add(pos);
             
@@ -801,14 +809,14 @@ public class GoBoardSwing extends JFrame {
         switch (lastMoveType) {
             case "place":
                 // Undo piece placement - remove the placed piece
-                gameLogic.getBoard()[lastMovePosition.row()][lastMovePosition.col()] = null;
+                App.getBoard()[lastMovePosition.row()][lastMovePosition.col()] = null;
                 System.out.println("Undone: Removed placed piece");
                 statusLabel.setText("Undone: Removed placed piece");
                 break;
                 
             case "removePiece":
                 // Undo single piece removal - restore the piece
-                gameLogic.getBoard()[lastMovePosition.row()][lastMovePosition.col()] = lastMovePiece;
+                App.getBoard()[lastMovePosition.row()][lastMovePosition.col()] = lastMovePiece;
                 String pieceColor = lastMovePiece.equals("○") ? "White" : "Black";
                 System.out.println("Undone: Restored " + pieceColor + " piece");
                 statusLabel.setText("Undone: Restored " + pieceColor + " piece");
@@ -818,7 +826,7 @@ public class GoBoardSwing extends JFrame {
                 // Undo group removal - restore all pieces in the group
                 int restoredCount = 0;
                 for (App.Position pos : lastRemovedGroup) {
-                    gameLogic.getBoard()[pos.row()][pos.col()] = lastMovePiece;
+                    App.getBoard()[pos.row()][pos.col()] = lastMovePiece;
                     restoredCount++;
                 }
                 String groupColor = lastMovePiece.equals("○") ? "White" : "Black";
@@ -842,34 +850,19 @@ public class GoBoardSwing extends JFrame {
     }
     
     
-    private void checkForCaptures(int row, int col) {
-        // Use searchAndCapture to check for captures after placing a piece
+    private void checkForCaptures(int row, int col, String pieceColor) {
+        // Use searchAndCapture to check for captures before placing a piece
         App.Position pos = new App.Position(row, col);
         
-        // Store the board state before capture
-        String[][] boardBeforeCapture = new String[9][9];
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                boardBeforeCapture[i][j] = gameLogic.getBoard()[i][j];
-            }
-        }
+        // Create a temporary captured pieces map for the call
+        Map<String, Integer> capturedPieces = new HashMap<>();
+        capturedPieces.put("○", 0);
+        capturedPieces.put("●", 0);
         
-        // Apply searchAndCapture
-        App.searchAndCapture(pos);
+        // Apply searchAndCapture (this will temporarily place the piece and check for captures)
+        boolean canCapture = App.searchAndCapture(capturedPieces, pos, pieceColor);
         
-        // Check if any pieces were captured
-        boolean capturesFound = false;
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                if (boardBeforeCapture[i][j] != null && gameLogic.getBoard()[i][j] == null) {
-                    capturesFound = true;
-                    break;
-                }
-            }
-            if (capturesFound) break;
-        }
-        
-        if (capturesFound) {
+        if (canCapture) {
             System.out.println("Captures found! Opponent pieces removed.");
             statusLabel.setText("Stone placed! Captures made.");
         } else {
@@ -896,7 +889,7 @@ public class GoBoardSwing extends JFrame {
         
         // Perform DFS and record all steps
         App.Position startPos = new App.Position(row, col);
-        performDFSWithSteps(startPos, gameLogic.getBoard()[row][col]);
+        performDFSWithSteps(startPos, App.getBoard()[row][col]);
         
         System.out.println("DFS traversal recorded " + dfsSteps.size() + " steps");
         
@@ -940,7 +933,7 @@ public class GoBoardSwing extends JFrame {
         // Check neighbors
         List<App.Position> neighbors = getNeighbors(pos);
         for (App.Position neighbor : neighbors) {
-            String neighborColor = gameLogic.getBoard()[neighbor.row()][neighbor.col()];
+            String neighborColor = App.getBoard()[neighbor.row()][neighbor.col()];
             
             if (neighborColor == null) {
                 // Found a liberty
