@@ -12,12 +12,10 @@ public class App {
     static boolean[][] territory = new boolean[9][9];
 
 
-    static boolean[][] beenVisited = new boolean[9][9];
-
     //populated board for testing
     static String[][] board = 
     {
-        {null, null, "●", "●", "●", null, null, null, null},
+        {null, null, "●", null, "●", null, null, null, null},
         {null, null, "●", "○", "○", "●", null, null, null},
         {null, null, "●", "○", null, "○", null, null, null},
         {null, null, null, "●", "○", null, null, null, null},
@@ -28,10 +26,14 @@ public class App {
         {null, "○", null, null, null, null, null, null, null},
 
     };
+
+    
+
     
     public static void main(String[] args) throws Exception {
 
         boolean player1 = true;
+        boolean playing = true;
 
         GameLogic.printBoard(board);
 
@@ -39,9 +41,18 @@ public class App {
         String[][] prevBoard = new String[board.length][board[0].length];
         String[][] prevPrevBoard = new String[board.length][board[0].length];
 
+        // Initialize Map to track captured pieces 
         Map<String, Integer> captured = new HashMap<>();
         captured.put("○", 0);
         captured.put("●", 0); 
+
+        // Initialize boolean array to track visited spaces
+        boolean[][] beenVisited = new boolean[9][9];
+
+        int numPasses = 0;
+
+        Scanner scn = new Scanner(System.in);
+
         
 
         // // ---- TEST ----
@@ -62,7 +73,7 @@ public class App {
         //     System.out.println(member);
         // }
 
-        while (true) {
+        while (playing) {
             // Map<String, Integer> captured = new HashMap<>();
             // captured.put("●", 0);
             // captured.put("○", 0);
@@ -71,84 +82,63 @@ public class App {
             prevBoard = GameLogic.copyBoard(board);
             // in go, player 1 is black
             String color = player1 ? "●" : "○"; 
-
-            Scanner scn = new Scanner(System.in);
             int x, y;
             System.out.println((player1 ? "Player 1's" : "Player 2's") + " turn");
-            System.out.println("Please enter X coord:");
-            x = scn.nextInt();
-            System.out.println("Please enter Y coord:");
-            y = scn.nextInt();
 
-            Position selectedPostion = new Position(x, y);
+            // PROMPT USER INPUT
+            // System.out.println("Please enter X coord:");
+            // x = scn.nextInt();
+            // System.out.println("Please enter Y coord:");
+            // y = scn.nextInt();
 
-            System.out.println(GameLogic.isAlive(board, selectedPostion, color));
+            // Position selectedPostion = new Position(x, y);
+            Position selectedPosition = GameLogic.promptUser(scn, player1);
+
+            // Handle player passing
+            if (selectedPosition.row() == -1){
+                numPasses += 1;
+                if (numPasses >= 2) {
+                    playing = false;
+                    continue;
+                }
+                player1 = !player1;
+                continue;
+            }
+
+            System.out.println(GameLogic.isAlive(board, selectedPosition, color));
 
 
-            if (board[x][y] != null) {
+            if (board[selectedPosition.row()][selectedPosition.col()] != null) {
                 System.out.println("This space is occupied. Try again");
                 continue;
             }
 
-            if (GameLogic.isAlive(board, selectedPostion, color)) {
-                System.out.println("isAlive for this position" + GameLogic.isAlive(board, selectedPostion, color));
-                if (GameLogic.passKoRule(board, selectedPostion, color, prevPrevBoard)) {
-                    GameLogic.placePiece(board, selectedPostion, player1);
-                    player1 = !player1;
-                }
-            
+            boolean legalMove = GameLogic.playMove(board, prevPrevBoard, player1, captured, selectedPosition, color);
+
+            if (legalMove) {
+                numPasses = 0;
             } else {
-                if (GameLogic.searchAndCapture(board, captured, selectedPostion, color)) {
-                    if (GameLogic.passKoRule(board, selectedPostion, color, prevPrevBoard)) {
-                        System.out.println("searchAndCapture returns: " + GameLogic.searchAndCapture(board, captured, selectedPostion, color));
-                        player1 = !player1;
-                    }
-                } 
-            }
+                // if move was not legal, try again
+                continue;
 
+            }
             
 
-            System.out.println("captured pieces: " + captured.get("○"));
+            // System.out.println("captured pieces: " + captured.get("○"));
             GameLogic.printBoard(board);
-            System.out.println("prevBoard:");
-            GameLogic.printBoard(prevBoard);
-            System.out.println("prevPrevBoard");
-            GameLogic.printBoard(prevPrevBoard);
-            System.out.println();
+            // System.out.println("prevBoard:");
+            // GameLogic.printBoard(prevBoard);
+            // System.out.println("prevPrevBoard");
+            // GameLogic.printBoard(prevPrevBoard);
+            // System.out.println();
 
         }
 
+        // scoring
+
+        System.out.println("Game over, time to score!");
+        GameLogic.removeDeadPieces(board, captured, scn);
+
         
-
-
-
-
-
-
-        // Scanner scn = new Scanner(System.in);
-        // boolean player1 =  true;
-        // int x, y;
-
-        // printBoard(board);
-
-        // while (true) {
-        //     System.out.println((player1 ? "Player 1's" : "Player 2's") + " turn");
-
-        //     System.out.println("Please enter X coord:");
-        //     x = scn.nextInt();
-        //     System.out.println("Please enter Y coord:");
-        //     y = scn.nextInt();
-
-        //     if (board[x][y] == null) {
-        //         placePiece(x, y, player1);
-        //         player1 = !player1;
-        //     } else {
-        //         System.out.println("This space is occupied. Try again");
-        //         continue;
-        //     }
-
-        //     printBoard(board);
-        //     System.out.println();
-        // }
     }
 }

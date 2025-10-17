@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 
 
@@ -81,6 +82,36 @@ public class GameLogic {
 
     static boolean boardEquals(String[][] a, String[][] b) {
         return Arrays.deepEquals(a, b);
+    }
+
+
+    static Position promptUser(Scanner scn, boolean player1) {
+        System.out.println(player1 ? "Black's turn" : "White's turn");
+        System.out.println("Enter X and Y coordinates separated by space, or 'p' for pass");
+        String input = scn.nextLine().trim();
+
+        while (input.isEmpty()) {
+            input = scn.nextLine().trim();
+        }
+
+        String[] coords = input.toLowerCase().split("\\s+");
+        if (coords.length == 1 && coords[0].equals("p")) {
+            return new Position(-1,-1);
+        }
+
+        if (coords.length != 2) {
+            System.out.println("Invalid input, try again");
+            return promptUser(scn, player1);
+        }
+
+        try {
+            int x = Integer.parseInt(coords[0]);
+            int y = Integer.parseInt(coords[1]);
+            return new Position(x, y);
+        } catch (NumberFormatException e) {
+            System.out.println("Coordinates must be integers");
+            return promptUser(scn, player1);
+        }
     }
 
     // ----------- Remove Pieces --------------
@@ -270,11 +301,80 @@ public class GameLogic {
     }
 
 
-    
-  
 
 
+    // -----  Play move ----
 
+    static boolean playMove(String[][] board, String[][] prevPrevBoard, boolean player1, Map<String, Integer> captured, Position selectedPosition, String color) {
+        if (GameLogic.isAlive(board, selectedPosition, color)) {
+            System.out.println("isAlive for this position" + GameLogic.isAlive(board, selectedPosition, color));
+            if (GameLogic.passKoRule(board, selectedPosition, color, prevPrevBoard)) {
+                GameLogic.placePiece(board, selectedPosition, player1);
+                player1 = !player1;
+                return true;
+            } else {
+                System.out.println("Illegal move, violates koh rule");
+                return false;
+            }
+        
+        } else {
+            if (GameLogic.searchAndCapture(board, captured, selectedPosition, color)) {
+                if (GameLogic.passKoRule(board, selectedPosition, color, prevPrevBoard)) {
+                    System.out.println("searchAndCapture returns: " + GameLogic.searchAndCapture(board, captured, selectedPosition, color));
+                    player1 = !player1;
+                    return true;
+                }
+            } else {
+                System.out.println("Illegal move, violates koh rule");
+                return false;
+            }
+        } 
+        System.out.println("Illegal move, immediate capture");
+        return false;
+    }
+
+
+    static void removeDeadPieces(String[][] board, Map<String, Integer> captured, Scanner scn) {
+        boolean removing = true;
+        while (removing) {
+            System.out.println("Do you want to manually remove dead stones?");
+            String shouldRemove = scn.nextLine().trim().toLowerCase();
+            if (shouldRemove.equals("y") || shouldRemove.equals("yes")) {
+                System.out.println("Entered X and Y coordinate, separated by space, of piece to remove:");
+                
+                String input = scn.nextLine().trim();
+                while (input.isEmpty()) {
+                    input = scn.nextLine().trim();
+                }
+        
+                String[] coords = input.toLowerCase().split("\\s+");
+        
+                if (coords.length != 2) {
+                    System.out.println("Invalid input, try again");
+                    removeDeadPieces(board, captured, scn);
+                }
+
+                try {
+                    int x = Integer.parseInt(coords[0]);
+                    int y = Integer.parseInt(coords[1]);
+                    Position selectedPosition = new Position(x, y);
+
+                    incrementCaptured(captured, 1, colorAt(board, selectedPosition));
+                    removePiece(board, selectedPosition);
+                } catch (NumberFormatException e) {
+                    System.out.println("Coordinates must be integers");
+                    removeDeadPieces(board, captured, scn);
+                }
+
+            } else if (shouldRemove.equals("n") || shouldRemove.equals("no")) {
+                removing = false;
+            } else {
+                System.out.println("Please enter 'y' or 'n'");
+            }
+            printBoard(board);
+        }
+
+    }
 
 
 
