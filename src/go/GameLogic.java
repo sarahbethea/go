@@ -138,7 +138,7 @@ public class GameLogic {
 
     // overloaded isAlive to accept color as argument to check unoccupied space
     static boolean isAlive(String[][] board, Position start, String color) {
-        System.out.println("isAlive called on position: " + start.row() + ", " + start.col + ", for color " + color);
+        System.out.println("isAlive called on position: " + start.row() + ", " + start.col() + ", for color " + color);
 
         String prev = board[start.row()][start.col()]; // before temporarily placing piece, should be null
         // temporarily place piece
