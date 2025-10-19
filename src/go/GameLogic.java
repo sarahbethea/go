@@ -33,9 +33,6 @@ public class GameLogic {
 
 
     private static String colorAt(String[][] board, Position pos) {
-        System.out.println();
-        System.out.println("colorAt called");
-        System.out.println();
         return board[pos.row()][pos.col()];
     }
 
@@ -243,6 +240,7 @@ public class GameLogic {
 
     static void scoreEmptyRegion(String[][] board, Position start, Map<String, Integer> territory, boolean[][] beenVisited) {
         // if position is not null or has been visited, return
+        System.out.println("scoreEmptyRegion called on position: " + start.row() + ", " + start.col());
         if (colorAt(board, start) != null || beenVisited[start.row()][start.col()] == true) return;
 
         // Initialize set for borderColor and list for region
@@ -251,17 +249,34 @@ public class GameLogic {
 
         dfsEmpty(board, start, beenVisited, borderColors, region);
 
-        if (borderColors.equals(Set.of("●"))) {
+        System.out.println("scoreEmptyRegion borderColors:");
+        for (String c: borderColors) {
+            System.out.println(c);
+        }
+
+        System.out.println("scoreEmptyRegion region:");
+        for (Position r: region) {
+            System.out.println(r.row() + ", " + r.col());
+        }
+
+        System.out.println("in scoreEmptyRegion region size: " + region.size());
+
+        // if borderColors is only black and null values, add region to black's territory
+        if (!borderColors.contains("○")) {
             int newTerritory = territory.get("●") + region.size();
+            System.out.println("black new territory: " + newTerritory);
             territory.put("●", newTerritory);
-        } else if (borderColors.equals(Set.of("○"))) {
+        // if borderColors is only white and null values, add region to white's territory
+        } else if (!borderColors.contains("●")) {
             int newTerritory = territory.get("○") + region.size();
+            System.out.println("black new territory: " + newTerritory);
             territory.put("○", newTerritory);
         }
 
     }
 
     static void dfsEmpty(String[][] board, Position pos, boolean[][] beenVisited, Set<String> borderColors, List<Position> region) {
+        System.out.println("dfsEmpty called ");
         beenVisited[pos.row()][pos.col()] = true;
         region.add(pos);
 
@@ -375,6 +390,8 @@ public class GameLogic {
         }
 
     }
+
+    // ------------ 
 
 
 

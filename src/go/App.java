@@ -4,30 +4,23 @@ import java.util.Map;
 import java.util.HashMap;
 
 public class App {
-
-    static String[][] goBoard = new String[9][9];
-
-    static boolean[][] lives = new boolean[9][9];
-
-    static boolean[][] territory = new boolean[9][9];
-
+    static String[][] board = new String[9][9];
 
     //populated board for testing
-    static String[][] board = 
+    static String[][] testBoard = 
     {
-        {null, null, "●", null, "●", null, null, null, null},
-        {null, null, "●", "○", "○", "●", null, null, null},
-        {null, null, "●", "○", null, "○", null, null, null},
-        {null, null, null, "●", "○", null, null, null, null},
+        {"●", "●", "●", null, "○", null, null, null, null},
+        {"●", null, "●", null, "○", null, null, null, null},
+        {"●", null, "●", null, "○", "○", "○", "○", "○"},
+        {"●", "●", "●", null, null, null, null, null, null},
         {null, null, null, null, null, null, null, null, null},
-        {"○", "○","○", "●", "●", "○", "●", "●", "●"},
-        {"○", null, null, "○", "○", "○", "○", "○", "●"},
-        {"○", null,"○", "○", null, "○", "○", null, "○"},
-        {null, "○", null, null, null, null, null, null, null},
+        {null, null, null, null, null, null, "○", null, null},
+        {"●", "●", "●", "●", null, "○", null, "○", null},
+        {null, null, null, "●", null, null, "○", null, null},
+        {null, null, null, "●", null, null, null, null, null},
 
     };
 
-    
 
     
     public static void main(String[] args) throws Exception {
@@ -41,10 +34,16 @@ public class App {
         String[][] prevBoard = new String[board.length][board[0].length];
         String[][] prevPrevBoard = new String[board.length][board[0].length];
 
-        // Initialize Map to track captured pieces 
+        // Initialize map to track captured pieces 
         Map<String, Integer> captured = new HashMap<>();
-        captured.put("○", 0);
         captured.put("●", 0); 
+        captured.put("○", 0);
+        
+
+        // Initialize map to track territory
+        Map<String, Integer> territory = new HashMap<>();
+        territory.put("●", 0);
+        territory.put("○", 0);
 
         // Initialize boolean array to track visited spaces
         boolean[][] beenVisited = new boolean[9][9];
@@ -134,10 +133,22 @@ public class App {
 
         }
 
-        // scoring
 
+        // Option to manually remove dead pieces
         System.out.println("Game over, time to score!");
         GameLogic.removeDeadPieces(board, captured, scn);
+
+        // Count territory
+        for (int r =0; r < board.length; r++) {
+            for (int c=0; c < board[0].length; c++) {
+                GameLogic.scoreEmptyRegion(board, new Position(r, c), territory, beenVisited);
+            }
+        }
+
+        int totalBlack = territory.get("●");
+        System.out.println("Black territory: " + totalBlack);
+        int totalWhite = territory.get("○");
+        System.out.println("White's territory: " + totalWhite);
 
         
     }
