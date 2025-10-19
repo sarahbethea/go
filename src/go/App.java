@@ -4,19 +4,19 @@ import java.util.Map;
 import java.util.HashMap;
 
 public class App {
-    static String[][] board = new String[9][9];
+    static String[][] goboard = new String[9][9];
 
     //populated board for testing
-    static String[][] testBoard = 
+    static String[][] board = 
     {
         {"●", "●", "●", null, "○", null, null, null, null},
         {"●", null, "●", null, "○", null, null, null, null},
         {"●", null, "●", null, "○", "○", "○", "○", "○"},
         {"●", "●", "●", null, null, null, null, null, null},
         {null, null, null, null, null, null, null, null, null},
-        {null, null, null, null, null, null, "○", null, null},
-        {"●", "●", "●", "●", null, "○", null, "○", null},
-        {null, null, null, "●", null, null, "○", null, null},
+        {null, null, null, null, null, null, "○", "●", null},
+        {"●", "●", "●", "●", null, "○", "●", null, "●"},
+        {null, null, null, "●", null, null, "○", "●", null},
         {null, null, null, "●", null, null, null, null, null},
 
     };
@@ -24,11 +24,8 @@ public class App {
 
     
     public static void main(String[] args) throws Exception {
-
         boolean player1 = true;
         boolean playing = true;
-
-        GameLogic.printBoard(board);
 
         // Initialize prevBoard states
         String[][] prevBoard = new String[board.length][board[0].length];
@@ -73,6 +70,7 @@ public class App {
         // }
 
         while (playing) {
+            GameLogic.printBoard(board);
             // Map<String, Integer> captured = new HashMap<>();
             // captured.put("●", 0);
             // captured.put("○", 0);
@@ -104,8 +102,6 @@ public class App {
                 continue;
             }
 
-            System.out.println(GameLogic.isAlive(board, selectedPosition, color));
-
 
             if (board[selectedPosition.row()][selectedPosition.col()] != null) {
                 System.out.println("This space is occupied. Try again");
@@ -115,27 +111,21 @@ public class App {
             boolean legalMove = GameLogic.playMove(board, prevPrevBoard, player1, captured, selectedPosition, color);
 
             if (legalMove) {
+                System.out.println("LEGAL MOVE");
+                GameLogic.placePiece(board, selectedPosition, player1);
                 numPasses = 0;
+                player1 = !player1;
             } else {
                 // if move was not legal, try again
                 continue;
 
             }
             
-
-            // System.out.println("captured pieces: " + captured.get("○"));
-            GameLogic.printBoard(board);
-            // System.out.println("prevBoard:");
-            // GameLogic.printBoard(prevBoard);
-            // System.out.println("prevPrevBoard");
-            // GameLogic.printBoard(prevPrevBoard);
-            // System.out.println();
-
         }
 
-
-        // Option to manually remove dead pieces
         System.out.println("Game over, time to score!");
+
+        // Optional: manually remove dead pieces
         GameLogic.removeDeadPieces(board, captured, scn);
 
         // Count territory
@@ -146,9 +136,17 @@ public class App {
         }
 
         int totalBlack = territory.get("●");
-        System.out.println("Black territory: " + totalBlack);
+        System.out.println("Black's territory: " + totalBlack);
         int totalWhite = territory.get("○");
         System.out.println("White's territory: " + totalWhite);
+
+        if (totalBlack > totalWhite) {
+            System.out.println("Black wins!");
+        } else if (totalWhite > totalBlack) {
+            System.out.println("White wins!");
+        } else {
+            System.out.println("It's a tie!");
+        }
 
         
     }
