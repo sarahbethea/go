@@ -79,7 +79,6 @@ public class App {
             boolean legalMove = GameLogic.playMove(board, prevBoard, prevPrevBoard, player1, captured, selectedPosition, color);
 
             if (legalMove) {
-                System.out.println("LEGAL MOVE");
                 GameLogic.searchAndCapture(board, captured, selectedPosition, color);
                 GameLogic.placePiece(board, selectedPosition, player1);
                 numPasses = 0;

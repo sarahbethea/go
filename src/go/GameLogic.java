@@ -207,7 +207,6 @@ public class GameLogic {
 
     // if pieces to capture, remove them and return number of pieces captured, else return 0
     static boolean searchAndCapture(String[][] board, Map<String, Integer> capturedPieces, Position start, String startColor) {
-        System.out.println("SEARCH AND CAPTURE CALLED");
         //temporarily place piece
         board[start.row()][start.col()] = startColor;
         boolean canCapture = false;
