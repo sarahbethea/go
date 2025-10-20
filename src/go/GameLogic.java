@@ -36,6 +36,7 @@ public class GameLogic {
     
     static void printBoard(String[][] board) {
         // print board coordinates for any size board
+        System.out.print(" ");
         for (int i = 0; i < board.length; i++) {
             System.out.print(" " + i);
         }
@@ -269,7 +270,7 @@ public class GameLogic {
 
     // ------------  Play move ------------
 
-    static boolean playMove(String[][] board, String[][] prevPrevBoard, boolean player1, Map<String, Integer> captured, Position selectedPosition, String color) {
+    static boolean playMove(String[][] board, String[][] prevBoard, String[][] prevPrevBoard, boolean player1, Map<String, Integer> captured, Position selectedPosition, String color) {
         if (isAlive(board, selectedPosition, color)) {
             if (passKoRule(board, selectedPosition, color, prevPrevBoard)) {
                 return true;
@@ -281,6 +282,7 @@ public class GameLogic {
         } else {
             if (searchAndCapture(board, captured, selectedPosition, color)) {
                 if (passKoRule(board, selectedPosition, color, prevPrevBoard)) {
+                    // should remove group here?
                     return true;
                 } else {
                     System.out.println("Illegal move, violates koh rule. Try again.");
