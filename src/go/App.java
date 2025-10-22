@@ -104,7 +104,6 @@ public class App {
             }
         }
 
-        // SUBTRACT CAPTURED!!!!!
         int capturedBlack = captured.get("●");
         int territoryBlack = territory.get("●");
         int totalBlack = territoryBlack - capturedBlack;
